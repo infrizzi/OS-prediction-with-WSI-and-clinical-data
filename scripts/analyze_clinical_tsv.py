@@ -70,7 +70,7 @@ missing_df = pd.DataFrame({
     "missing_pct": missing_pct
 }).sort_values("missing_pct", ascending=False)
 
-print(missing_df)
+print(missing_df.head(15))
 
 # ==========================
 # COLUMN TYPE ANALYSIS
