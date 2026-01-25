@@ -55,11 +55,11 @@ def main():
     for column in numerical_cols:
         X[column] = scaler.fit_transform(X[[column]])
 
-    # 5. Drop NA for labels
-    label = label.dropna()
-
-    # Rebuild dataframe
+    # Rebuild dataframe and drop NA label
     df_out = pd.concat([df_id, X, label], axis=1)
+    df_out = df_out.dropna(subset=['Overall Survival (Months)'])
+
+    df_out[LABEL_COL] = scaler.fit_transform(df_out[[LABEL_COL]])
 
     # Export
     with pd.ExcelWriter(OUTPUT_XLSX, engine="openpyxl") as writer:
