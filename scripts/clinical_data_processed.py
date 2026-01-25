@@ -59,6 +59,8 @@ def main():
     df_out = pd.concat([df_id, X, label], axis=1)
     df_out = df_out.dropna(subset=['Overall Survival (Months)'])
 
+    df_out[LABEL_COL] = scaler.fit_transform(df_out[[LABEL_COL]])
+
     # Export
     with pd.ExcelWriter(OUTPUT_XLSX, engine="openpyxl") as writer:
         df_out.to_excel(writer, index=False, sheet_name="clean_data")
