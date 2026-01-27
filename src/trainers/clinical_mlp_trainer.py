@@ -1,5 +1,9 @@
 import torch
 
+# =============================
+# TRAINER AND VALIDATION LOGIC
+# =============================
+
 class Trainer:
     def __init__(self, model, optimizer, criterion, device):
         self.model = model
