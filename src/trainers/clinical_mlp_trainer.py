@@ -23,7 +23,8 @@ class Trainer:
             self.optimizer.step()
             total_loss += loss.item()
         return total_loss / len(loader)
-
+    
+    
     def validate(self, loader):
         self.model.eval()
         total_loss = 0

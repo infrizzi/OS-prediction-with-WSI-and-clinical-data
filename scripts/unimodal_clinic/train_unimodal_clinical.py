@@ -2,6 +2,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from pathlib import Path
+import sys
+
+# =========================
+# Add project root to PYTHONPATH
+# =========================
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(PROJECT_ROOT))
 
 # Import custom modules 
 from src.datasets.clinical_dataset import ClinicalDataset
@@ -24,7 +31,9 @@ def main():
     # 2. Model, Loss and Optimizer
     model = ClinicalMLP(input_dim=train_ds[0][0].shape[0]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-2)
-    criterion = nn.L1Loss()     # Mean Absolute Error
+    #criterion = nn.L1Loss()     # Mean Absolute Error
+    criterion = nn.SmoothL1Loss(beta=1.0) #Huber loss added
+
 
     # 3. Training loop with Trainer
     trainer = Trainer(model, optimizer, criterion, device)

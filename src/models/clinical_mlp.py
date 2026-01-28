@@ -13,19 +13,19 @@ class ClinicalMLP(nn.Module):
             nn.Linear(input_dim, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2), #Dropout from 0.3 to 02
             
             # Layer 2
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2),
 
             # Layer 3
             nn.Linear(128, embedding_dim),
             nn.BatchNorm1d(embedding_dim),
             nn.ReLU(),
-            nn.Dropout(0.3)
+            nn.Dropout(0.2)
         )
         
         # Final regression head
