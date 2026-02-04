@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 
 # ==========================
-# TAKE TRAINING DATA
+# TAKE CLINICAL TRAINING DATA
 # ==========================
 
 class ClinicalDataset(Dataset):
