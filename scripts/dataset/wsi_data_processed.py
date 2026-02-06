@@ -1,67 +1,72 @@
 import os
 import json
-import torch
 import pandas as pd
 from pathlib import Path
+import joblib
+from sklearn.preprocessing import StandardScaler
 
 # ==============================
-# Set up the paths (you need to update the paths when files are downloaded)
+# Set up paths
 # ==============================
-# Define the path where .pt files are stored (here you provide your custom path)
-wsi_data_path = r"C:\Users\feder\Desktop\AI in BioInformatics\progetto\Embedding WSI\pt_files"  # Your custom path to the .pt files
+WSI_PATH = r"C:\Users\lucap\Downloads\File_FBI\pt_files" 
 
-# Path to the Excel file containing clinical data (clinical_clean.xlsx in processed folder)
-clinical_data_file = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "clinical_clean.xlsx"  # Path to Excel
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+CLINICAL_PATH = PROJECT_ROOT / "data" / "processed" / "clinical_clean.xlsx"
+JSON_FILE = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "processed"
 
-# ==============================
-# Step 1: Load Clinical Data from Excel
-# ==============================
-# Load the clinical data from the Excel file
-clinical_data = pd.read_excel(clinical_data_file)
+def main():
+    # ==============================
+    # Step 1: Load Clinical Data
+    # ==============================
+    clinical_data = pd.read_excel(CLINICAL_PATH)
 
-# Remove rows where 'Overall Survival' (OS) is missing
-# We assume 'OS' column contains the survival information
-clinical_data = clinical_data.dropna(subset=['Overall Survival (Months)'])
+    # Remove NA OS entries
+    clinical_data = clinical_data.dropna(subset=['Overall Survival (Months)'])
 
-# ==============================
-# Step 2: Create Patient-Slide Association (using Patient ID and Slide file names)
-# ==============================
-# Dictionary to store the patient-slide associations
-patient_slide_dict = {}
+    # ==============================
+    # Step 2: Create Patient-Slide-OS Association
+    # ==============================
+    patient_slide_dict = {}
 
-# Iterate over the clinical data to associate patients with their slides
-for _, row in clinical_data.iterrows():
-    patient_id = row['Patient ID']
-    
-    # Assuming the slide files are named with the pattern 'PatientID-SlideID.pt'
-    # and are stored in the wsi_data_path directory
-    patient_slide_files = [f for f in os.listdir(wsi_data_path) if f.startswith(str(patient_id)) and f.endswith('.pt')]
-    
-    # Add the patient-slide association to the dictionary
-    if patient_slide_files:
-        patient_slide_dict[str(patient_id)] = patient_slide_files
+    # Scaling OS values
+    scaler = StandardScaler()
+    clinical_data['Overall Survival (Months)'] = scaler.fit_transform(clinical_data[['Overall Survival (Months)']])
 
-# ==============================
-# Step 3: Report - Output Information
-# ==============================
-# Calculate total number of patients and slides
-total_patients = len(patient_slide_dict)
-total_slides = sum(len(slides) for slides in patient_slide_dict.values())
+    for _, row in clinical_data.iterrows():
+        patient_id = str(row['Patient ID'])
+        os_months = row['Overall Survival (Months)']
+        
+        # Looking for slide files corresponding to the patient ID
+        patient_slide_files = [f for f in os.listdir(WSI_PATH) if f.startswith(patient_id) and f.endswith('.pt')]
+        
+        if patient_slide_files:
+            patient_slide_dict[patient_id] = {
+                "slides": patient_slide_files,
+                "os_months": float(os_months)
+            }
 
-# Print some useful stats
-print("\n===== Patient-Slide Report =====")
-print(f"Total number of patients: {total_patients}")
-print(f"Total number of slides: {total_slides}")
-print(f"Average number of slides per patient: {total_slides / total_patients:.2f}")
+    # ==============================
+    # Step 3: Report - Output Information
+    # ==============================
+    total_patients = len(patient_slide_dict)
+    total_slides = sum(len(info["slides"]) for info in patient_slide_dict.values())
 
-# ==============================
-# Step 4: Save the Patient-Slide Association to a JSON file
-# ==============================
-# Path where the JSON file will be saved (inside the 'processed' folder)
-json_output_file = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "patient_slide_association.json"  # Save in processed
+    print("\n===== Patient-Slide Report =====")
+    print(f"Total number of patients with slides and OS: {total_patients}")
+    print(f"Total number of slides: {total_slides}")
+    if total_patients > 0:
+        print(f"Average number of slides per patient: {total_slides / total_patients:.2f}")
 
-# Save the dictionary to a JSON file
-with open(json_output_file, 'w') as json_file:
-    json.dump(patient_slide_dict, json_file, indent=4)
+    # ==============================
+    # Step 4: Save to JSON
+    # ==============================
+    joblib.dump(scaler, OUTPUT_DIR / "target_scaler_wsi.pkl") # Save scaler for labels
 
-print("\nPatient-Slide association has been saved to:", json_output_file)
+    with open(JSON_FILE, 'w') as json_file:
+        json.dump(patient_slide_dict, json_file, indent=4)
+
+    print("\nAssociation saved in:", JSON_FILE)
+
+if __name__ == "__main__":
+    main()
