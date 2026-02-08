@@ -13,7 +13,7 @@ sys.path.append(str(PROJECT_ROOT))
 # Import custom modules 
 from src.datasets.clinical_dataset import ClinicalDataset
 from src.models.clinical_mlp import ClinicalMLP
-from trainers.clinical_trainer import Trainer
+from src.trainers.clinical_trainer import Trainer
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "splits"
 SAVE_PATH = Path(__file__).resolve().parent.parent.parent / "outputs" / "checkpoints" / "clinical_model_v1.pth"

@@ -11,11 +11,12 @@ class VisualDataset(Dataset):
             json_path: json path containing patient information including OS
         """
         self.split_dir = Path(split_dir)
-        # Carichiamo il JSON per recuperare l'OS
+
+        # JSON load
         with open(json_path, 'r') as f:
             self.patient_info = json.load(f)
         
-        # Lista di tutti i file .pt presenti nello split
+        # .pt file list
         self.file_list = list(self.split_dir.glob("*.pt"))
 
     def __len__(self):
@@ -23,13 +24,12 @@ class VisualDataset(Dataset):
 
     def __getitem__(self, idx):
         file_path = self.file_list[idx]
-        patient_id = file_path.stem  # Prende il nome del file senza .pt (es. TCGA-XX-XXXX)
+        patient_id = file_path.stem  # file name without '.pt' extension
         
-        # Caricamento embedding [N, 768]
+        # Embedding load [N, 768]
         features = torch.load(file_path, map_location='cpu')
         
-        # Recupero target OS dal JSON
-        # Assicurati che il formato del patient_id nel JSON coincida con quello del file
+        # Label load
         target_os = self.patient_info[patient_id]['os_months']
         target = torch.tensor([target_os], dtype=torch.float32)
         

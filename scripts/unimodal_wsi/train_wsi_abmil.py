@@ -37,7 +37,7 @@ def main():
     criterion = nn.SmoothL1Loss()
 
     # 3. Training loop with Trainer
-    trainer = VisualTrainer(model, optimizer, criterion, device, accumulation_steps=4)
+    trainer = VisualTrainer(model, optimizer, criterion, device, accumulation_steps=8)
     
     # 4. Early Stopping Setup
     best_val_loss = float('inf')
@@ -46,7 +46,7 @@ def main():
   
     # 5. Training Process
     print("Starting Visual Unimodal Training...")
-    for epoch in range(1, 101): 
+    for epoch in range(1, 201): 
         t_loss = trainer.train_epoch(train_loader)
         v_loss = trainer.validate(val_loader)
         
