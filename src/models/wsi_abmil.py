@@ -19,30 +19,28 @@ import torch.nn.functional as F
 
 class ABMILRegressor(nn.Module):
     def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5):
-        super(ABMILRegressor, self).__init__()
+        super().__init__()
         self.L = input_dim
         self.D = hidden_dim
         self.K = 1
 
-        # Relevant features extraction (range [-1, 1])
+        # Attention blocks
         self.attention_V = nn.Sequential(
             nn.Linear(self.L, self.D),
             nn.Tanh()
         )
 
-        # Gating mechanism to avoid non relevant features (range [0, 1])
         self.attention_U = nn.Sequential(
             nn.Linear(self.L, self.D),
             nn.Sigmoid()
         )
 
-        # Single score projection -> attention weights for every patch
         self.attention_weights = nn.Sequential(
             nn.Dropout(dropout),
             nn.Linear(self.D, self.K)
-            )
+        )
 
-        # Regression Branch
+        # Regression head 
         self.regressor = nn.Sequential(
             nn.Linear(self.L, 128),
             nn.LayerNorm(128),
@@ -51,21 +49,32 @@ class ABMILRegressor(nn.Module):
             nn.Linear(128, 1)
         )
 
+    # ==========================
+    # FEATURE EXTRACTION
+    # ==========================
+    def forward_features(self, x):
+        """
+        Returns:
+            M: aggregated WSI embedding [1, L]
+            a: attention weights        [1, N]
+        """
+        # x: [1, N, L]
+        x = x.squeeze(0)  # [N, L]
+
+        a_v = self.attention_V(x)
+        a_u = self.attention_U(x)
+        a = self.attention_weights(a_v * a_u)  # [N, 1]
+
+        a = a.T
+        a = F.softmax(a, dim=1)
+
+        M = torch.mm(a, x)  # [1, L]
+        return M, a
+
+    # ==========================
+    # STANDARD FORWARD
+    # ==========================
     def forward(self, x):
-        # x shape: [Batch, N, 768] -> [1, N, 768] if we use batch_size=1
-        x = x.squeeze(0) # [N, 768]
-
-        # Calcolo pesi attenzione
-        a_v = self.attention_V(x) 
-        a_u = self.attention_U(x) 
-        a = self.attention_weights(a_v * a_u) # [N, 1]
-        
-        a = torch.transpose(a, 1, 0) # [1, N]
-        a = F.softmax(a, dim=1) # Normalized weights
-
-        # Aggregation
-        M = torch.mm(a, x) # [1, 768]
-
-        # Regression
-        prediction = self.regressor(M) # [1, 1]
-        return prediction, a
+        M, a = self.forward_features(x)
+        pred = self.regressor(M)
+        return pred, a
