@@ -1,19 +1,21 @@
 import torch.nn as nn
 
-# ==========================
-# BUILD THE MODEL
-# ==========================
 
-class ClinicalMLP(nn.Module):
+class ClinicalEncoder(nn.Module):
+    """
+    Clinical feature encoder.
+    Input:  x [B, input_dim]
+    Output: emb [B, embedding_dim]
+    """
     def __init__(self, input_dim=463, embedding_dim=64):
         super().__init__()
-        
-        self.embedding_extractor = nn.Sequential(
+
+        self.net = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.2),
-            
+
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
@@ -24,23 +26,43 @@ class ClinicalMLP(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        
-        # Regression head 
-        self.regression_head = nn.Linear(embedding_dim, 1)
+
+    def forward(self, x):
+        return self.net(x)
+    
+class ClinicalRegressionHead(nn.Module):
+    """
+    Regression head for clinical embeddings.
+    Input:  emb [B, embedding_dim]
+    Output: pred [B, 1]
+    """
+    def __init__(self, embedding_dim=64):
+        super().__init__()
+        self.fc = nn.Linear(embedding_dim, 1)
+
+    def forward(self, x):
+        return self.fc(x)
+    
+class ClinicalMLP(nn.Module):
+    """
+    Backward-compatible wrapper.
+    - forward(x)        -> prediction (unimodale clinico)
+    - forward_features  -> embedding (per MCAT)
+    """
+    def __init__(self, input_dim=463, embedding_dim=64):
+        super().__init__()
+        self.encoder = ClinicalEncoder(input_dim, embedding_dim)
+        self.head = ClinicalRegressionHead(embedding_dim)
 
     # ==========================
     # FEATURE EXTRACTION
     # ==========================
     def forward_features(self, x):
-        """
-        Returns:
-            emb: clinical embedding [B, embedding_dim]
-        """
-        return self.embedding_extractor(x)
+        return self.encoder(x)
 
     # ==========================
     # STANDARD FORWARD
     # ==========================
     def forward(self, x):
-        emb = self.forward_features(x)
-        return self.regression_head(emb)
+        emb = self.encoder(x)
+        return self.head(emb)

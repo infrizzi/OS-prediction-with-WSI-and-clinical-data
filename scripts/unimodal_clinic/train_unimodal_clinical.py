@@ -30,7 +30,14 @@ def main():
 
     # 2. Model, Loss and Optimizer
     model = ClinicalMLP(input_dim=train_ds[0][0].shape[0]).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-2)
+    
+    optimizer = torch.optim.Adam(
+    [
+        {"params": model.encoder.parameters(), "lr": 1e-4},
+        {"params": model.head.parameters(), "lr": 1e-4},
+    ],
+    weight_decay=1e-2
+)
     #criterion = nn.L1Loss()     # Mean Absolute Error
     criterion = nn.SmoothL1Loss(beta=1.0) #Huber loss added
 
@@ -54,7 +61,17 @@ def main():
             best_val_loss = v_loss
             counter = 0
             # Save only the best model
-            torch.save(model.state_dict(), SAVE_PATH)
+            SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+            torch.save(
+                model.encoder.state_dict(),
+                SAVE_PATH.with_name("clinical_encoder.pth")
+            )
+
+            torch.save(
+                model.head.state_dict(),
+                SAVE_PATH.with_name("clinical_head.pth")
+            )
         else:
             counter += 1
             if counter >= patience:
