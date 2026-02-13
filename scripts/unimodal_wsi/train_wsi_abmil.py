@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 import sys
 
-# Aggiunta del root del progetto al PYTHONPATH
+# =========================
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
@@ -12,9 +12,8 @@ from src.datasets.wsi_dataset import VisualDataset
 from src.models.wsi_abmil import ABMILRegressor
 from src.trainers.wsi_trainer import VisualTrainer
 
-# Configurazione Percorsi
+# Path setup
 JSON_PATH = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
-# Percorsi esterni per i tensori aggregati
 TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
 VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
@@ -23,11 +22,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # 1. Datasets & Loaders (batch_size=1 è obbligatorio per N patch variabili)
+    # 1. Datasets & Loaders
     train_ds = VisualDataset(TRAIN_DIR, JSON_PATH)
     val_ds   = VisualDataset(VAL_DIR, JSON_PATH)
     
-    train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=1, shuffle=True) # Batch size 1 with variable patch count N
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer

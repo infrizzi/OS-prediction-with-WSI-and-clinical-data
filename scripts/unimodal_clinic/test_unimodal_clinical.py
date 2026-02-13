@@ -17,9 +17,11 @@ from src.datasets.clinical_dataset import ClinicalDataset
 from src.models.clinical_mlp import ClinicalMLP
 
 # Path setup
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = PROJECT_ROOT
 DATA_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
-MODEL_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_model_v1.pth"
+# Nuovi path per i checkpoint modulari
+ENCODER_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_encoder.pth"
+HEAD_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_head.pth"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 def evaluate():
@@ -27,7 +29,7 @@ def evaluate():
     
     # 1. Test dataset and loader
     if not SCALER_PATH.exists():
-        print(f"ERRORE: Scaler del target non trovato in {SCALER_PATH}")
+        print(f"ERROR: Scaler not found at {SCALER_PATH}")
         return
 
     target_scaler = joblib.load(SCALER_PATH)
@@ -37,7 +39,16 @@ def evaluate():
     # 2. Model initialization and loading
     input_dim = test_ds[0][0].shape[0]
     model = ClinicalMLP(input_dim=input_dim).to(device)
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    
+    # Caricamento modulare dei pesi
+    if ENCODER_PATH.exists() and HEAD_PATH.exists():
+        model.encoder.load_state_dict(torch.load(ENCODER_PATH, map_location=device))
+        model.head.load_state_dict(torch.load(HEAD_PATH, map_location=device))
+        print("Model weights loaded successfully from separate files.")
+    else:
+        print(f"ERROR: Checkpoints not found at {ENCODER_PATH} or {HEAD_PATH}")
+        return
+
     model.eval()
 
     all_preds_std = []
@@ -61,18 +72,17 @@ def evaluate():
     mae = mean_absolute_error(labels_months, preds_months)
     rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
     r2 = r2_score(labels_months, preds_months)
-    
 
     # 6. Final report
     print("\n" + "="*40)
-    print("      CLINICAL REPORT")
+    print("      CLINICAL REPORT ")
     print("="*40)
-    print(f"MAE :  {mae:.2f} mesi")
-    print(f"RMSE : {rmse:.2f} mesi")
+    print(f"MAE :  {mae:.2f} months")
+    print(f"RMSE : {rmse:.2f} months")
     print(f"R² :           {r2:.4f}")
     print("-" * 40)
     print("Examples:")
-    for i in range(10): 
+    for i in range(min(10, len(preds_months))): 
         diff = preds_months[i] - labels_months[i]
         print(f"Real: {labels_months[i]:5.1f} | Predicted: {preds_months[i]:5.1f} | Error: {diff:5.1f}")
     print("="*40)

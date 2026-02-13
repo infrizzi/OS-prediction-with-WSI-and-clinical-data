@@ -13,17 +13,17 @@ from lifelines.utils import concordance_index
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-# Import custom modules 
 from src.datasets.wsi_dataset import VisualDataset
 from src.models.wsi_abmil import ABMILRegressor
 
 # Path setup
 BASE_DIR = PROJECT_ROOT
-# Percorso locale indicato per i file .pt di test
 TEST_DATA_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
-MODEL_PATH = BASE_DIR / "outputs" / "checkpoints" / "visual_model_v1.pth"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
+
+ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder.pth"
+HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head.pth"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,18 +31,26 @@ def evaluate():
 
     # 1. Load Scaler
     if not SCALER_PATH.exists():
-        print(f"ERRORE: Scaler del target non trovato in {SCALER_PATH}")
+        print(f"ERROR: Scaler not found at {SCALER_PATH}")
         return
     target_scaler = joblib.load(SCALER_PATH)
 
-    # 2. Test dataset and loader (Batch size 1 obbligatorio)
+    # 2. Test dataset and loader
     test_ds = VisualDataset(TEST_DATA_DIR, JSON_PATH)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    # Assicurati che input_dim coincida con CONCH (768)
     model = ABMILRegressor(input_dim=768, hidden_dim=256).to(device)
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    
+    # Caricamento modulare
+    if ABMIL_PATH.exists() and HEAD_PATH.exists():
+        model.abmil.load_state_dict(torch.load(ABMIL_PATH, map_location=device))
+        model.head.load_state_dict(torch.load(HEAD_PATH, map_location=device))
+        print("Visual model weights (ABMIL + Head) loaded successfully.")
+    else:
+        print(f"ERROR: Checkpoints not found at {ABMIL_PATH} or {HEAD_PATH}")
+        return
+        
     model.eval()
 
     all_preds_std = []
@@ -53,7 +61,7 @@ def evaluate():
     # 4. Prediction loop
     with torch.no_grad():
         for inputs, labels in test_loader:
-            # L'ABMIL sputa (predizione, pesi_attenzione)
+            # L'ABMIL returns (prediction, attention_weights))
             outputs, _ = model(inputs.to(device))
             
             all_preds_std.append(outputs.cpu().item())
@@ -70,27 +78,23 @@ def evaluate():
     mae = mean_absolute_error(labels_months, preds_months)
     rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
     r2 = r2_score(labels_months, preds_months)
-    
-    # C-Index: richiede le predizioni (o rischi) e i tempi reali
-    # Per lifelines, usiamo il negativo delle predizioni se le predizioni sono 'tempi di vita'
-    # perché un valore alto di predizione = basso rischio
     c_index = concordance_index(labels_months, preds_months)
 
     # 7. Final report
     print("\n" + "="*45)
-    print("           VISUAL UNIMODAL TEST REPORT")
+    print("      VISUAL UNIMODAL TEST REPORT ")
     print("="*45)
-    print(f"MAE  : {mae:.2f} mesi")
-    print(f"RMSE : {rmse:.2f} mesi")
-    print(f"R²   : {r2:.4f}")
-    print(f"C-Index : {c_index:.4f}  <-- Metrica chiave")
+    print(f"MAE     : {mae:.2f} mesi")
+    print(f"RMSE    : {rmse:.2f} mesi")
+    print(f"R²      : {r2:.4f}")
+    print(f"C-Index : {c_index:.4f}")
     print("-" * 45)
     
     # Esempi
-    print("Top 10 Predictions:")
-    for i in range(10): 
+    print("Sample Predictions:")
+    for i in range(min(10, len(preds_months))): 
         diff = preds_months[i] - labels_months[i]
-        print(f"Real: {labels_months[i]:6.1f} | Pred: {preds_months[i]:6.1f} | Error: {diff:6.1f}")
+        print(f"Real: {labels_months[i]:6.1f} | Pred: {preds_months[i]:6.1f} | Err: {diff:6.1f}")
     print("="*45)
 
 if __name__ == "__main__":

@@ -15,8 +15,8 @@ from src.datasets.clinical_dataset import ClinicalDataset
 from src.models.clinical_mlp import ClinicalMLP
 from src.trainers.clinical_trainer import Trainer
 
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "splits"
-SAVE_PATH = Path(__file__).resolve().parent.parent.parent / "outputs" / "checkpoints" / "clinical_model_v1.pth"
+DATA_DIR = PROJECT_ROOT / "data" / "splits"
+SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "clinical_model_v1.pth"
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -39,7 +39,7 @@ def main():
     weight_decay=1e-2
 )
     #criterion = nn.L1Loss()     # Mean Absolute Error
-    criterion = nn.SmoothL1Loss(beta=1.0) #Huber loss added
+    criterion = nn.SmoothL1Loss(beta=1.0) #Huber loss
 
 
     # 3. Training loop with Trainer

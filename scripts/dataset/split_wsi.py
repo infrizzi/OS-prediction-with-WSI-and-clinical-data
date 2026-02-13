@@ -49,12 +49,6 @@ def main():
     # main function to create visual splits
     for split in ['train', 'val', 'test']:
         create_visual_split(split, OUTPUT_VISUAL_SPLITS)
-
-    """
-    # main function to create visual splits in the multimodal case
-    for split in ['train_multi', 'val_multi', 'test_multi']:        ## WE'RE SUPPOSING NEW FILE NAMES, CHANGE IF NECESSARY ##
-        create_visual_split(split, OUTPUT_VISUAL_SPLITS_MULTIMODAL)
-    """
     
     print(f"\nMirroring completed! Files are in: {OUTPUT_VISUAL_SPLITS}")
 

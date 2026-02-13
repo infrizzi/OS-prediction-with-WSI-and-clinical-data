@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class ABMIL(nn.Module):
     """
     Attention-based MIL aggregator.
-    Input:  x [B, N, L] (nel tuo caso B=1)
+    Input:  x [B, N, L] (B=1 in our case, N=number of patches, L=embedding dim)
     Output: M [B, L] aggregated embedding, a [B, N] attention weights
     """
     def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5):
@@ -31,8 +31,7 @@ class ABMIL(nn.Module):
         )
 
     def forward(self, x):
-        # x: [B, N, L] (tu usi B=1)
-        # manteniamo compatibilità con B=1
+        # x: [B, N, L]
         x = x.squeeze(0)  # [N, L]
 
         a_v = self.attention_V(x)
@@ -65,8 +64,8 @@ class RegressionHead(nn.Module):
 class ABMILRegressor(nn.Module):
     """
     Backward-compatible wrapper:
-    - forward(x) returns (pred, attn) like before
-    - forward_features(x) returns (M, attn) like before
+    - forward(x) returns (pred, attn)
+    - forward_features(x) returns (M, attn)
     """
     def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5):
         super().__init__()

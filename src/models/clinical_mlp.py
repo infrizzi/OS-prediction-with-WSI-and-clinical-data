@@ -12,17 +12,17 @@ class ClinicalEncoder(nn.Module):
 
         self.net = nn.Sequential(
             nn.Linear(input_dim, 256),
-            nn.BatchNorm1d(256),
+            nn.LayerNorm(256),
             nn.ReLU(),
             nn.Dropout(0.2),
 
             nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
+            nn.LayerNorm(128),
             nn.ReLU(),
             nn.Dropout(0.2),
 
             nn.Linear(128, embedding_dim),
-            nn.BatchNorm1d(embedding_dim),
+            nn.LayerNorm(embedding_dim),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
@@ -46,8 +46,8 @@ class ClinicalRegressionHead(nn.Module):
 class ClinicalMLP(nn.Module):
     """
     Backward-compatible wrapper.
-    - forward(x)        -> prediction (unimodale clinico)
-    - forward_features  -> embedding (per MCAT)
+    - forward(x)        -> prediction (unimodal clinical)
+    - forward_features  -> embedding (for MCAT)
     """
     def __init__(self, input_dim=463, embedding_dim=64):
         super().__init__()

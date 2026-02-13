@@ -1,5 +1,9 @@
 import torch
 
+# =============================
+# TRAINER AND VALIDATION LOGIC
+# =============================
+
 class VisualTrainer:
     def __init__(self, model, optimizer, criterion, device, accumulation_steps=4):
         self.model = model

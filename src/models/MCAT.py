@@ -47,11 +47,15 @@ class MCAT(nn.Module):
 
         # Early-fusion multimodal head
         self.regression_head = nn.Sequential(
-            nn.Linear(d_clin + d_vis, 128),
+            nn.Linear(d_clin + d_vis, 256), 
+            nn.LayerNorm(256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 128),           
             nn.LayerNorm(128),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(128, 1)
+            nn.Linear(128, 1)              
         )
 
         # If we want learnable weights for late fusion
@@ -59,22 +63,31 @@ class MCAT(nn.Module):
             # weights for (clinical_pred, visual_pred, early_pred) in "both"
             # or (clinical_pred, visual_pred) in "late"
             n = 3 if fusion == "both" else 2
-            self._late_logits = nn.Parameter(torch.zeros(n))
+            initial_logits = torch.zeros(n)
+
+            if n == 2:
+            # Assumiamo l'ordine: [0] Clinical, [1] Visual
+            # Vogliamo che la softmax dia ~70% al visivo.
+            # Poiché softmax(0, 1) = [0.27, 0.73]
+                initial_logits[0] = 0.0
+                initial_logits[1] = 1.0 
+        
+            # Trasformiamo il tensore in un Parameter per renderlo allenabile
+            self._late_logits = nn.Parameter(initial_logits)
 
     def _compute_visual_path(self, clin_emb, vis_x):
         """
-        Returns:
-            vis_emb: [B, d_vis]
-            attn:    [B, N]
-            abmil_attn: [B, N']  (in our case N'=1, but keep generic)
+        vis_x: [B, N, d_vis]
         """
-        # Cross-attention (clinical → visual)
-        vis_guided, attn = self.cross_attention(clin_emb, vis_x)  # [B, d_vis], [B, N]
+        # 1. Co-Attention: la clinica pesa le patch originali
+        # vis_guided: [B, N, d_vis] (ancora N patch!)
+        vis_guided, cross_attn_weights = self.cross_attention(clin_emb, vis_x)
 
-        # ABMIL expects a bag [B, N, d_vis]
-        vis_guided = vis_guided.unsqueeze(1)                      # [B, 1, d_vis]
-        vis_emb, abmil_attn = self.abmil(vis_guided)              # [B, d_vis], [B, 1]
-        return vis_emb, attn, abmil_attn
+        # 2. ABMIL: aggrega le patch pesate
+        # vis_emb: [B, d_vis], abmil_attn: [B, N]
+        vis_emb, abmil_attn = self.abmil(vis_guided) 
+        
+        return vis_emb, cross_attn_weights, abmil_attn
 
     def _late_fuse(self, preds: list[torch.Tensor]) -> torch.Tensor:
         """

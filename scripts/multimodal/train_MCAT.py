@@ -7,7 +7,7 @@ import sys
 # =========================
 # Add project root to PYTHONPATH
 # =========================
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 # ====== IMPORTS (adatta ai tuoi path reali) ======
@@ -23,9 +23,10 @@ from src.datasets.MCAT_dataset import MCATDataset   # <--- se non esiste ancora,
 # =========================
 # CONFIG
 # =========================
-DATA_DIR = PROJECT_ROOT / "data" / "multimodal_splits"   # esempio
-TRAIN_FILE = DATA_DIR / "train.pt"
-VAL_FILE   = DATA_DIR / "val.pt"
+TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
+VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
+TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
@@ -38,20 +39,21 @@ ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
 WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
 
 # Fusion
-FUSION_MODE = "both"          # "early" | "late" | "both"
+FUSION_MODE = "late"          # "early" | "late" | "both"
 LATE_STRATEGY = "weighted"    # "avg" | "weighted"
 
 # Train hyperparams
-BATCH_SIZE = 1                # consigliato se N patch variabile
+BATCH_SIZE = 1                
 LR = 1e-4
 WEIGHT_DECAY = 1e-3
 EPOCHS = 200
+DROPOUT = 0.5
 PATIENCE = 15
-ACCUM_STEPS = 8               # simile al tuo trainer visivo
+ACCUM_STEPS = 8               
 
-# Freeze schedule (consigliato all’inizio)
-FREEZE_CLIN_ENCODER = True
-FREEZE_ABMIL = True
+# Warmup first epochs
+WARMUP_MODE = False            # Se True, prima fissi gli encoder e alleni solo cross-attention e head
+WARMUP_EPOCHS = 10 
 
 
 def save_mcat_checkpoints(model: MCAT, out_dir: Path):
@@ -74,7 +76,7 @@ def save_mcat_checkpoints(model: MCAT, out_dir: Path):
         torch.save(model._late_logits.detach().cpu(), out_dir / "late_logits.pt")
 
 
-def maybe_load(module, path: Path):
+def load_tensor(module, path: Path):
     if path.exists():
         module.load_state_dict(torch.load(path, map_location="cpu"))
         print(f"Loaded: {path.name}")
@@ -86,6 +88,24 @@ def set_requires_grad(module, flag: bool):
     for p in module.parameters():
         p.requires_grad = flag
 
+def print_fusion_weights(model):
+    if not hasattr(model, "_late_logits"):
+        print("Il modello non utilizza una strategia di fusione pesata.")
+        return
+
+    # Estraiamo i pesi applicando la softmax ai logits
+    with torch.no_grad():
+        weights = torch.softmax(model._late_logits, dim=0).cpu().numpy()
+    
+    if model.fusion == "late":
+        # Ordine: [clinical_pred, visual_pred]
+        print(f"    Ramo CLINICO: {weights[0]*100:.2f}% | Ramo VISIVO:  {weights[1]*100:.2f}%")
+    
+    elif model.fusion == "both":
+        # Ordine: [clinical_pred, visual_pred, early_pred]
+        print(f"    Ramo CLINICO: {weights[0]*100:.2f}% | Ramo VISIVO:  {weights[1]*100:.2f}% | Ramo EARLY:  {weights[2]*100:.2f}%")
+    
+    print("_"*30 + "\n")
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,8 +114,8 @@ def main():
     # =========================
     # 1) Dataset & Loader
     # =========================
-    train_ds = MCATDataset(TRAIN_FILE)
-    val_ds   = MCATDataset(VAL_FILE)
+    train_ds = MCATDataset(TRAIN_PATH_CLINICAL, TRAIN_VISUAL_DIR)
+    val_ds   = MCATDataset(VAL_PATH_CLINICAL, VAL_VISUAL_DIR)
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     val_loader   = DataLoader(val_ds, batch_size=BATCH_SIZE)
@@ -128,27 +148,27 @@ def main():
         visual_head=visual_head,
         fusion=FUSION_MODE,
         late_strategy=LATE_STRATEGY,
-        dropout=0.3,
+        dropout=DROPOUT,
     ).to(device)
 
     # =========================
-    # 3) Load unimodal weights (optional but recommended)
+    # 3) Load unimodal weights
     # =========================
-    maybe_load(model.clinical_encoder, CLIN_ENCODER_CKPT)
-    maybe_load(model.abmil, ABMIL_CKPT)
+    load_tensor(model.clinical_encoder, CLIN_ENCODER_CKPT)
+    load_tensor(model.abmil, ABMIL_CKPT)
 
     if FUSION_MODE in {"late", "both"}:
-        maybe_load(model.clinical_head, CLIN_HEAD_CKPT)
-        maybe_load(model.visual_head, WSI_HEAD_CKPT)
+        load_tensor(model.clinical_head, CLIN_HEAD_CKPT)
+        load_tensor(model.visual_head, WSI_HEAD_CKPT)
 
     # =========================
-    # 4) Freeze encoders (recommended at start)
+    # 4) Warmup first epochs
     # =========================
-    if FREEZE_CLIN_ENCODER:
-        set_requires_grad(model.clinical_encoder, False)
-
-    if FREEZE_ABMIL:
-        set_requires_grad(model.abmil, False)
+    if WARMUP_MODE:
+        print(f"\n>>> PHASE 1: WARM-UP ({WARMUP_EPOCHS} epochs)")
+    set_requires_grad(model.clinical_encoder, False)
+    set_requires_grad(model.abmil, False)
+    
 
     # =========================
     # 5) Optimizer: only trainable params
@@ -173,9 +193,31 @@ def main():
     # =========================
     best_val = float("inf")
     counter = 0
+    is_full_training = False
 
     print(f"Starting MCAT training | fusion={FUSION_MODE} | late={LATE_STRATEGY}")
     for epoch in range(1, EPOCHS + 1):
+
+        if epoch > WARMUP_EPOCHS and not is_full_training and WARMUP_MODE:
+            print(f"\n>>> PHASE 2: FINE-TUNING ")
+            set_requires_grad(model.clinical_encoder, True)
+            set_requires_grad(model.abmil, True)
+            
+            # RE-INITIALIZE OPTIMIZER con LR differenziati
+            optimizer = torch.optim.Adam([
+                # Encoders: LR molto basso per non distruggere i pesi pre-addestrati
+                {'params': model.clinical_encoder.parameters(), 'lr': 1e-6}, 
+                {'params': model.abmil.parameters(), 'lr': 1e-6},
+                # Cross-Attention e Head: LR standard perché devono ancora imparare molto
+                {'params': model.cross_attention.parameters(), 'lr': LR},
+                {'params': model.regression_head.parameters(), 'lr': LR},
+                # Logits ottimizzati
+                {'params': [model._late_logits], 'lr': 1e-3},
+            ], weight_decay=5e-2) # Aumentato WD
+            
+            trainer.optimizer = optimizer
+            is_full_training = True
+
         t_loss = trainer.train_epoch(train_loader)
         v_loss = trainer.validate(val_loader)
 
@@ -185,7 +227,8 @@ def main():
             best_val = v_loss
             counter = 0
             save_mcat_checkpoints(model, CKPT_DIR)
-            print("  --> Saved best MCAT checkpoints")
+            print("--> Saved best MCAT checkpoints")
+            print_fusion_weights(model)
         else:
             counter += 1
             if counter >= PATIENCE:
