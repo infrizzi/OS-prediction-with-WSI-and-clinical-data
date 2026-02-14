@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from lifelines.utils import concordance_index
+from sklearn.utils import resample 
 
 # =========================
 # Add project root to PYTHONPATH
@@ -28,8 +29,8 @@ TEST_CLINICAL_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
 TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
-# Directory Checkpoints MCAT (quelli salvati dal trainer multimodale)
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat"
+# Directory Checkpoints MCAT
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_early"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -46,7 +47,7 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
     print(f"Dataset Test pronto: {len(test_ds)} campioni.")
 
-    # 3. Inizializzazione Modello (Configurazione identica al training)
+    # 3. Inizializzazione Modello
     clin_x0, vis_x0, _ = test_ds[0]
     d_in = clin_x0.shape[-1]
     d_vis = vis_x0.shape[-1]
@@ -56,7 +57,6 @@ def evaluate():
     abmil = ABMIL(input_dim=d_vis, hidden_dim=256)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model)
     
-    # Heads per Late Fusion
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
     visual_head = RegressionHead(input_dim=d_vis)
 
@@ -68,11 +68,11 @@ def evaluate():
         d_vis=d_vis,
         clinical_head=clinical_head,
         visual_head=visual_head,
-        fusion="late",      # o "both" se hai usato quello
+        fusion="late",
         late_strategy="weighted"
     ).to(device)
 
-    # 4. Caricamento Pesi dai checkpoint MCAT
+    # 4. Caricamento Pesi
     try:
         model.clinical_encoder.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_encoder.pth"))
         model.abmil.load_state_dict(torch.load(MCAT_CKPT_DIR / "abmil_encoder.pth"))
@@ -103,50 +103,63 @@ def evaluate():
         for clin_x, vis_x, y in test_loader:
             clin_x = clin_x.to(device)
             vis_x = vis_x.to(device)
-            
-            # Forward
             pred_fused, out_info = model(clin_x, vis_x)
 
-            # Salvataggio predizioni (standardizzate)
             results["fused"]["preds"].append(pred_fused.cpu().item())
             results["fused"]["labels"].append(y.item())
-            
             results["clin"]["preds"].append(out_info["clinical_pred"].cpu().item())
             results["clin"]["labels"].append(y.item())
-            
             results["vis"]["preds"].append(out_info["visual_pred"].cpu().item())
             results["vis"]["labels"].append(y.item())
 
-    # 6. De-standardizzazione e Report
-    def get_metrics(y_true, y_pred):
+    # 6. De-standardizzazione e Report con Bootstrap
+    def get_metrics_with_bootstrap(y_true, y_pred, n_iterations=1000):
         y_true = np.array(y_true).reshape(-1, 1)
         y_pred = np.array(y_pred).reshape(-1, 1)
         
-        # Inverti scaling
+        # Inverti scaling per avere mesi reali
         true_m = target_scaler.inverse_transform(y_true).flatten()
         pred_m = target_scaler.inverse_transform(y_pred).flatten()
         
+        # Metriche "Point Estimate" (quelle originali)
+        mae_point = mean_absolute_error(true_m, pred_m)
+        r2_point = r2_score(true_m, pred_m)
+        cindex_point = concordance_index(true_m, pred_m)
+
+        # Bootstrap Loop
+        boot_c = []
+        boot_mae = []
+        for _ in range(n_iterations):
+            # Ricampionamento con ripetizione
+            indices = resample(np.arange(len(true_m)), replace=True)
+            if len(np.unique(true_m[indices])) < 2: continue # Salta campioni non validi
+            
+            boot_c.append(concordance_index(true_m[indices], pred_m[indices]))
+            boot_mae.append(mean_absolute_error(true_m[indices], pred_m[indices]))
+
         return {
-            "mae": mean_absolute_error(true_m, pred_m),
-            "rmse": np.sqrt(mean_squared_error(true_m, pred_m)),
-            "r2": r2_score(true_m, pred_m),
-            "cindex": concordance_index(true_m, pred_m),
+            "mae": mae_point,
+            "mae_std": np.std(boot_mae),
+            "r2": r2_point,
+            "cindex": cindex_point,
+            "cindex_std": np.std(boot_c),
             "raw_preds": pred_m,
             "raw_labels": true_m
         }
 
-    m_fused = get_metrics(results["fused"]["labels"], results["fused"]["preds"])
-    m_clin = get_metrics(results["clin"]["labels"], results["clin"]["preds"])
-    m_vis = get_metrics(results["vis"]["labels"], results["vis"]["preds"])
+    print(f"Calculating metrics and bootstrap SD (1000 iterations)...")
+    m_fused = get_metrics_with_bootstrap(results["fused"]["labels"], results["fused"]["preds"])
+    m_clin = get_metrics_with_bootstrap(results["clin"]["labels"], results["clin"]["preds"])
+    m_vis = get_metrics_with_bootstrap(results["vis"]["labels"], results["vis"]["preds"])
 
     # 7. Final Report
-    print("\n" + "="*60)
-    print(f"{'MODALITY':<15} | {'C-INDEX':<10} | {'MAE (Months)':<12} | {'R2':<8}")
-    print("-" * 60)
-    print(f"{'Clinical Only':<15} | {m_clin['cindex']:.4f}    | {m_clin['mae']:.2f}        | {m_clin['r2']:.4f}")
-    print(f"{'Visual Only':<15} | {m_vis['cindex']:.4f}    | {m_vis['mae']:.2f}        | {m_vis['r2']:.4f}")
-    print(f"{'MCAT Fused':<15} | {m_fused['cindex']:.4f}    | {m_fused['mae']:.2f}        | {m_fused['r2']:.4f}")
-    print("="*60)
+    print("\n" + "="*75)
+    print(f"{'MODALITY':<15} | {'C-INDEX (±SD)':<18} | {'MAE (±SD) Months':<18} | {'R2':<8}")
+    print("-" * 75)
+    print(f"{'Clinical Only':<15} | {m_clin['cindex']:.4f} ± {m_clin['cindex_std']:.4f} | {m_clin['mae']:.2f} ± {m_clin['mae_std']:.2f}     | {m_clin['r2']:.4f}")
+    print(f"{'Visual Only':<15} | {m_vis['cindex']:.4f} ± {m_vis['cindex_std']:.4f} | {m_vis['mae']:.2f} ± {m_vis['mae_std']:.2f}     | {m_vis['r2']:.4f}")
+    print(f"{'MCAT Fused':<15} | {m_fused['cindex']:.4f} ± {m_fused['cindex_std']:.4f} | {m_fused['mae']:.2f} ± {m_fused['mae_std']:.2f}     | {m_fused['r2']:.4f}")
+    print("="*75)
 
     # Analisi pesi finali
     with torch.no_grad():

@@ -28,7 +28,7 @@ VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
 TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_early"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Pesi unimodali (se vuoi inizializzare da quelli)
@@ -39,7 +39,7 @@ ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
 WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
 
 # Fusion
-FUSION_MODE = "late"          # "early" | "late" | "both"
+FUSION_MODE = "early"          # "early" | "late" | "both"
 LATE_STRATEGY = "weighted"    # "avg" | "weighted"
 
 # Train hyperparams
@@ -48,8 +48,8 @@ LR = 1e-4
 WEIGHT_DECAY = 1e-3
 EPOCHS = 200
 DROPOUT = 0.5
-PATIENCE = 15
-ACCUM_STEPS = 8               
+PATIENCE = 10
+ACCUM_STEPS = 256               
 
 # Warmup first epochs
 WARMUP_MODE = False            # Se True, prima fissi gli encoder e alleni solo cross-attention e head

@@ -12,6 +12,8 @@ class CrossAttention(nn.Module):
         # Value: Proietta il visivo (mantenendo d_vis per il residuo)
         self.v_proj = nn.Linear(d_vis, d_vis) 
         
+        self.attn_dropout = nn.Dropout(0.3)
+
         # LayerNorm per stabilizzare il training post-somma
         self.norm = nn.LayerNorm(d_vis)
         
@@ -33,7 +35,8 @@ class CrossAttention(nn.Module):
         # --- 2. Attention Scores ---
         # [B, 1, d_model] @ [B, d_model, N] -> [B, 1, N]
         attn_scores = torch.matmul(Q, K.transpose(-2, -1)) * self.scale
-        attn_weights = F.softmax(attn_scores, dim=-1) 
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        attn_weights = self.attn_dropout(attn_weights) 
         
         # --- 3. Contextualization ---
         # Moltiplichiamo le values per i pesi (Broadcasting su d_vis)
