@@ -30,7 +30,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_early"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_both_weighted"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,7 +68,7 @@ def evaluate():
         d_vis=d_vis,
         clinical_head=clinical_head,
         visual_head=visual_head,
-        fusion="late",
+        fusion="both",
         late_strategy="weighted"
     ).to(device)
 
@@ -79,6 +79,7 @@ def evaluate():
         model.cross_attention.load_state_dict(torch.load(MCAT_CKPT_DIR / "cross_attention.pth"))
         model.clinical_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_head.pth"))
         model.visual_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "wsi_head.pth"))
+        model.regression_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "mcat_head.pth"))
         
         if (MCAT_CKPT_DIR / "late_logits.pt").exists():
              model._late_logits = torch.nn.Parameter(torch.load(MCAT_CKPT_DIR / "late_logits.pt").to(device))

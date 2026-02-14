@@ -28,7 +28,7 @@ VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
 TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_early"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_both_weighted"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Pesi unimodali (se vuoi inizializzare da quelli)
@@ -39,7 +39,7 @@ ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
 WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
 
 # Fusion
-FUSION_MODE = "early"          # "early" | "late" | "both"
+FUSION_MODE = "both"          # "early" | "late" | "both"
 LATE_STRATEGY = "weighted"    # "avg" | "weighted"
 
 # Train hyperparams
@@ -173,8 +173,26 @@ def main():
     # =========================
     # 5) Optimizer: only trainable params
     # =========================
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(trainable_params, lr=LR, weight_decay=WEIGHT_DECAY)
+    fusion_params = []
+    base_params = []
+
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        
+        # Identifichiamo i logit della fusione pesata
+        if "_late_logits" in name:
+            fusion_params.append(param)
+        else:
+            base_params.append(param)
+
+    # Definiamo i gruppi di parametri
+    param_groups = [
+        {'params': base_params, 'lr': LR},            # LR standard (1e-4)
+        {'params': fusion_params, 'lr': 1e-1}         # higher LR -> they need to learn fast from the start         
+    ]
+
+    optimizer = torch.optim.Adam(param_groups, weight_decay=WEIGHT_DECAY)
     criterion = nn.SmoothL1Loss(beta=1.0)
 
     # =========================
@@ -212,7 +230,7 @@ def main():
                 {'params': model.cross_attention.parameters(), 'lr': LR},
                 {'params': model.regression_head.parameters(), 'lr': LR},
                 # Logits ottimizzati
-                {'params': [model._late_logits], 'lr': 1e-3},
+                {'params': [model._late_logits], 'lr': 1e-2},
             ], weight_decay=5e-2) # Aumentato WD
             
             trainer.optimizer = optimizer
