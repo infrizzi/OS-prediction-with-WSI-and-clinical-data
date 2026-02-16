@@ -22,6 +22,7 @@ TEST_DATA_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
+# Modular paths
 ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder.pth"
 HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head.pth"
 
@@ -42,7 +43,7 @@ def evaluate():
     # 3. Model initialization and loading
     model = ABMILRegressor(input_dim=768, hidden_dim=256).to(device)
     
-    # Caricamento modulare
+    # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():
         model.abmil.load_state_dict(torch.load(ABMIL_PATH, map_location=device))
         model.head.load_state_dict(torch.load(HEAD_PATH, map_location=device))
@@ -61,7 +62,7 @@ def evaluate():
     # 4. Prediction loop
     with torch.no_grad():
         for inputs, labels in test_loader:
-            # L'ABMIL returns (prediction, attention_weights))
+            # ABMIL returns (prediction, attention_weights))
             outputs, _ = model(inputs.to(device))
             
             all_preds_std.append(outputs.cpu().item())

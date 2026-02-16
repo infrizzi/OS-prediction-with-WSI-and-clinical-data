@@ -31,8 +31,8 @@ class ABMIL(nn.Module):
         )
 
     def forward(self, x):
-        # x: [B, N, L]
-        x = x.squeeze(0)  # [N, L]
+        # x: [B, N, 768]
+        x = x.squeeze(0)  # [N, 768]
 
         a_v = self.attention_V(x)
         a_u = self.attention_U(x)
@@ -41,7 +41,7 @@ class ABMIL(nn.Module):
         a = a.T                 # [1, N]
         a = F.softmax(a, dim=1) # [1, N]
 
-        M = torch.mm(a, x)      # [1, L]
+        M = torch.mm(a, x)      # [1, 768]
         return M, a
 
 class RegressionHead(nn.Module):

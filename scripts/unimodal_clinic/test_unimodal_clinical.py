@@ -19,9 +19,12 @@ from src.models.clinical_mlp import ClinicalMLP
 # Path setup
 BASE_DIR = PROJECT_ROOT
 DATA_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
-# Nuovi path per i checkpoint modulari
+
+# Modular checkpoint paths
 ENCODER_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_encoder.pth"
 HEAD_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_head.pth"
+
+# Scaler path for de-standardization
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 def evaluate():
@@ -40,7 +43,7 @@ def evaluate():
     input_dim = test_ds[0][0].shape[0]
     model = ClinicalMLP(input_dim=input_dim).to(device)
     
-    # Caricamento modulare dei pesi
+    # Modulaer weights loading
     if ENCODER_PATH.exists() and HEAD_PATH.exists():
         model.encoder.load_state_dict(torch.load(ENCODER_PATH, map_location=device))
         model.head.load_state_dict(torch.load(HEAD_PATH, map_location=device))

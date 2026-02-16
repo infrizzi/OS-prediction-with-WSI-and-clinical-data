@@ -10,28 +10,27 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-# ====== IMPORTS (adatta ai tuoi path reali) ======
-from src.models.MCAT import MCAT                    # la classe MCAT che hai
+# Import MCAT modules
+from src.models.MCAT import MCAT                   
 from src.models.cross_attention import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_abmil import ABMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
-
-# Dataset multimodale: deve restituire (clin_x, vis_x, y)
-from src.datasets.MCAT_dataset import MCATDataset   # <--- se non esiste ancora, lo crei (o adattalo)
+from src.datasets.MCAT_dataset import MCATDataset   
 
 # =========================
-# CONFIG
+# PATH SETUP
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
 TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
+# MCAT checkpoint directory
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_both_weighted"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Pesi unimodali (se vuoi inizializzare da quelli)
+# Unimodal checkpoints
 UNIMODAL_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 CLIN_ENCODER_CKPT = UNIMODAL_DIR / "clinical_encoder.pth"
 CLIN_HEAD_CKPT    = UNIMODAL_DIR / "clinical_head.pth"
@@ -52,30 +51,32 @@ PATIENCE = 10
 ACCUM_STEPS = 256               
 
 # Warmup first epochs
-WARMUP_MODE = False            # Se True, prima fissi gli encoder e alleni solo cross-attention e head
+WARMUP_MODE = False            # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
 WARMUP_EPOCHS = 10 
 
+# ======================================================================================================================================================
 
+# Save new checkpoints for MCAT model 
+# (clinical encoder, abmil, cross-attention, fusion head, and optionally unimodal heads and late fusion logits)
 def save_mcat_checkpoints(model: MCAT, out_dir: Path):
-    """
-    Salva ogni componente in un file separato.
-    """
+
     torch.save(model.clinical_encoder.state_dict(), out_dir / "clinical_encoder.pth")
     torch.save(model.abmil.state_dict(), out_dir / "abmil_encoder.pth")
     torch.save(model.cross_attention.state_dict(), out_dir / "cross_attention.pth")
     torch.save(model.regression_head.state_dict(), out_dir / "mcat_head.pth")
 
-    # Se late/both, salva anche le head unimodali riusate (se presenti)
+    # If late/both, also save unimodal heads
     if getattr(model, "clinical_head", None) is not None:
         torch.save(model.clinical_head.state_dict(), out_dir / "clinical_head.pth")
     if getattr(model, "visual_head", None) is not None:
         torch.save(model.visual_head.state_dict(), out_dir / "wsi_head.pth")
 
-    # Se weighted late fusion, salva i logits
+    # if weighted, also save fusion logits
     if hasattr(model, "_late_logits"):
         torch.save(model._late_logits.detach().cpu(), out_dir / "late_logits.pt")
 
 
+# Load module with the corresponding checkpoint, if it exists
 def load_tensor(module, path: Path):
     if path.exists():
         module.load_state_dict(torch.load(path, map_location="cpu"))
@@ -84,28 +85,32 @@ def load_tensor(module, path: Path):
         print(f"[WARN] Not found: {path}")
 
 
+# Utility function to freeze/unfreeze modules
 def set_requires_grad(module, flag: bool):
     for p in module.parameters():
         p.requires_grad = flag
 
+
+# Utility to print current fusion weights 
 def print_fusion_weights(model):
     if not hasattr(model, "_late_logits"):
-        print("Il modello non utilizza una strategia di fusione pesata.")
+        print("Model doesn't use weighted late fusion strategy")
         return
 
-    # Estraiamo i pesi applicando la softmax ai logits
+    # Extract weights using softmax
     with torch.no_grad():
         weights = torch.softmax(model._late_logits, dim=0).cpu().numpy()
     
     if model.fusion == "late":
-        # Ordine: [clinical_pred, visual_pred]
-        print(f"    Ramo CLINICO: {weights[0]*100:.2f}% | Ramo VISIVO:  {weights[1]*100:.2f}%")
+        # Order: [clinical_pred, visual_pred]
+        print(f"    CLINICAL: {weights[0]*100:.2f}% | VISUAL:  {weights[1]*100:.2f}%")
     
     elif model.fusion == "both":
-        # Ordine: [clinical_pred, visual_pred, early_pred]
-        print(f"    Ramo CLINICO: {weights[0]*100:.2f}% | Ramo VISIVO:  {weights[1]*100:.2f}% | Ramo EARLY:  {weights[2]*100:.2f}%")
+        # Order: [clinical_pred, visual_pred, early_pred]
+        print(f"    CLINICAL: {weights[0]*100:.2f}% | VISUAL:  {weights[1]*100:.2f}% | EARLY:  {weights[2]*100:.2f}%")
     
     print("_"*30 + "\n")
+
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -130,11 +135,12 @@ def main():
     # =========================
     # 2) Build modules
     # =========================
+    # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
     abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.5)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model)
 
-    # Heads riusate per late fusion
+    # Unimodal heads only if late/both fusion
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin) if FUSION_MODE in {"late", "both"} else None
     visual_head = RegressionHead(input_dim=d_vis, dropout=0.5) if FUSION_MODE in {"late", "both"} else None
 
@@ -166,6 +172,7 @@ def main():
     # =========================
     if WARMUP_MODE:
         print(f"\n>>> PHASE 1: WARM-UP ({WARMUP_EPOCHS} epochs)")
+
     set_requires_grad(model.clinical_encoder, False)
     set_requires_grad(model.abmil, False)
     
@@ -180,16 +187,16 @@ def main():
         if not param.requires_grad:
             continue
         
-        # Identifichiamo i logit della fusione pesata
+        # Discriminate between late fusion logits and normal params
         if "_late_logits" in name:
             fusion_params.append(param)
         else:
             base_params.append(param)
 
-    # Definiamo i gruppi di parametri
+    # Define each learning rate
     param_groups = [
-        {'params': base_params, 'lr': LR},            # LR standard (1e-4)
-        {'params': fusion_params, 'lr': 1e-1}         # higher LR -> they need to learn fast from the start         
+        {'params': base_params, 'lr': LR},            # standard LR (1e-4)
+        {'params': fusion_params, 'lr': 1e-1}         # higher LR -> learning faster        
     ]
 
     optimizer = torch.optim.Adam(param_groups, weight_decay=WEIGHT_DECAY)
@@ -221,17 +228,19 @@ def main():
             set_requires_grad(model.clinical_encoder, True)
             set_requires_grad(model.abmil, True)
             
-            # RE-INITIALIZE OPTIMIZER con LR differenziati
+            # RE-INITIALIZE OPTIMIZER with different LR
             optimizer = torch.optim.Adam([
-                # Encoders: LR molto basso per non distruggere i pesi pre-addestrati
+                # Encoders: LR very low because already well-trained
                 {'params': model.clinical_encoder.parameters(), 'lr': 1e-6}, 
                 {'params': model.abmil.parameters(), 'lr': 1e-6},
-                # Cross-Attention e Head: LR standard perché devono ancora imparare molto
+
+                # Cross-Attention e Head: standard LR
                 {'params': model.cross_attention.parameters(), 'lr': LR},
                 {'params': model.regression_head.parameters(), 'lr': LR},
-                # Logits ottimizzati
+
+                # Late fusion weights
                 {'params': [model._late_logits], 'lr': 1e-2},
-            ], weight_decay=5e-2) # Aumentato WD
+            ], weight_decay=5e-2) # Higher WD
             
             trainer.optimizer = optimizer
             is_full_training = True

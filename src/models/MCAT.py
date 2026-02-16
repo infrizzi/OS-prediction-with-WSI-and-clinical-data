@@ -7,14 +7,14 @@ class MCAT(nn.Module):
     MCAT with configurable fusion strategy:
       - fusion="early": early fusion only (standard MCAT)
       - fusion="late": late fusion only (clinical head + visual head)
-      - fusion="both": compute all and combine (recommended for experiments)
+      - fusion="both": compute all and combine 
 
     Notes:
       - clinical_encoder: ClinicalEncoder (outputs [B, d_clin])
       - abmil: ABMIL aggregator (outputs [B, d_vis])
       - cross_attention: CrossAttention (clinical->visual)
-      - clinical_head: ClinicalRegressionHead (d_clin -> 1)  (reuse unimodal head)
-      - visual_head: RegressionHead (d_vis -> 1)             (reuse unimodal head)
+      - clinical_head: ClinicalRegressionHead (d_clin -> 1)  
+      - visual_head: RegressionHead (d_vis -> 1)             
     """
     def __init__(
         self,
@@ -41,7 +41,7 @@ class MCAT(nn.Module):
         self.fusion = fusion
         self.late_strategy = late_strategy
 
-        # Reuse unimodal heads (optional but recommended for late fusion)
+        # Reuse unimodal heads 
         self.clinical_head = clinical_head  # ClinicalRegressionHead (d_clin->1)
         self.visual_head = visual_head      # RegressionHead (d_vis->1)
 
@@ -58,7 +58,7 @@ class MCAT(nn.Module):
             nn.Linear(128, 1)              
         )
 
-        # If we want learnable weights for late fusion
+        # Learnable weights for late fusion
         if self.late_strategy == "weighted":
             # weights for (clinical_pred, visual_pred, early_pred) in "both"
             # or (clinical_pred, visual_pred) in "late"
@@ -66,24 +66,23 @@ class MCAT(nn.Module):
             initial_logits = torch.zeros(n)
 
             if n == 2:
-            # Assumiamo l'ordine: [0] Clinical, [1] Visual
-            # Vogliamo che la softmax dia ~70% al visivo.
-            # Poiché softmax(0, 1) = [0.27, 0.73]
+            # Assuming: [0] Clinical, [1] Visual
+            # softmax(0, 1) = [0.27, 0.73]
                 initial_logits[0] = 0.0
                 initial_logits[1] = 1.0 
         
-            # Trasformiamo il tensore in un Parameter per renderlo allenabile
+            # From tensor to nn.Parameter so that they are learnable
             self._late_logits = nn.Parameter(initial_logits)
 
     def _compute_visual_path(self, clin_emb, vis_x):
         """
         vis_x: [B, N, d_vis]
         """
-        # 1. Co-Attention: la clinica pesa le patch originali
-        # vis_guided: [B, N, d_vis] (ancora N patch!)
+        # 1. Co-Attention: clinical-guided visual contextualization
+        # vis_guided: [B, N, d_vis]
         vis_guided, cross_attn_weights = self.cross_attention(clin_emb, vis_x)
 
-        # 2. ABMIL: aggrega le patch pesate
+        # 2. ABMIL: patch aggregation with attention-based MIL pooling
         # vis_emb: [B, d_vis], abmil_attn: [B, N]
         vis_emb, abmil_attn = self.abmil(vis_guided) 
         
@@ -99,6 +98,7 @@ class MCAT(nn.Module):
         # weighted: softmax over learnable logits
         w = torch.softmax(self._late_logits, dim=0)               # [k]
         stacked = torch.stack(preds, dim=0)                       # [k, B, 1]
+        
         # weighted sum over k
         return (w.view(-1, 1, 1) * stacked).sum(dim=0)            # [B, 1]
 

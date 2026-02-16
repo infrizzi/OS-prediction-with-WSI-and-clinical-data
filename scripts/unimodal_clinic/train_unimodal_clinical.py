@@ -38,8 +38,8 @@ def main():
     ],
     weight_decay=1e-2
 )
-    #criterion = nn.L1Loss()     # Mean Absolute Error
-    criterion = nn.SmoothL1Loss(beta=1.0) #Huber loss
+    #criterion = nn.L1Loss()                # Mean Absolute Error
+    criterion = nn.SmoothL1Loss(beta=1.0)   # Huber loss
 
 
     # 3. Training loop with Trainer
