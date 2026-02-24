@@ -7,21 +7,21 @@ class ClinicalEncoder(nn.Module):
     Input:  x [B, input_dim]
     Output: emb [B, embedding_dim]
     """
-    def __init__(self, input_dim=463, embedding_dim=64):
+    def __init__(self, input_dim=50, embedding_dim=64):
         super().__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 256),
-            nn.LayerNorm(256),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-
-            nn.Linear(256, 128),
+            nn.Linear(input_dim, 128),
             nn.LayerNorm(128),
             nn.ReLU(),
+            nn.Dropout(0.3),
+
+            nn.Linear(128, 64),
+            nn.LayerNorm(64),
+            nn.ReLU(),
             nn.Dropout(0.2),
 
-            nn.Linear(128, embedding_dim),
+            nn.Linear(64, embedding_dim),
             nn.LayerNorm(embedding_dim),
             nn.ReLU(),
             nn.Dropout(0.2)

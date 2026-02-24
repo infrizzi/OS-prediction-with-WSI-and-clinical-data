@@ -16,8 +16,8 @@ from src.trainers.wsi_trainer import VisualTrainer
 
 # Path setup
 JSON_PATH = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
-TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
-VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
+TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\train")
+VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
 
 def main():
@@ -65,10 +65,10 @@ def main():
             SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
             torch.save(model.abmil.state_dict(),
-                    SAVE_PATH.with_name("abmil_encoder.pth"))
+                    SAVE_PATH.with_name("abmil_encoder_new.pth"))
 
             torch.save(model.head.state_dict(),
-                    SAVE_PATH.with_name("wsi_head.pth"))
+                    SAVE_PATH.with_name("wsi_head_new.pth"))
             
             print(f"  --> Model saved")
         else:

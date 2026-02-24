@@ -47,9 +47,13 @@ class CrossAttention(nn.Module):
         # [B, 1, N] -> transpose
         # [B, N, d_vis] * [B, N, 1] -> [B, N, d_vis]
         vis_context = V * attn_weights.transpose(1, 2)
+
+        # EFFECTIVE CROSS-ATTENTION OUTPUT (not used due to worst performance):
+        # [B, 1, N] @ [B, N, d_vis] -> [B, 1, d_vis]
+        # vis_context = torch.matmul(attn_weights, V)  
         
         # --- 4. RESIDUAL CONNECTION & NORMALIZATION ---
         # Sum context (vis_context) to original visual signal (vis_x)
-        out = self.norm(vis_x + vis_context)
+        out = self.norm(vis_context + vis_x)  # [B, N, d_vis]
         
         return out, attn_weights.squeeze(1)

@@ -14,6 +14,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.datasets.clinical_dataset import ClinicalDataset
 from src.models.clinical_mlp import ClinicalMLP
 from src.trainers.clinical_trainer import Trainer
+from utils.Cox import CoxPHLoss
 
 DATA_DIR = PROJECT_ROOT / "data" / "splits"
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "clinical_model_v1.pth"
@@ -22,8 +23,8 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 1. Datasets & Loaders
-    train_ds = ClinicalDataset(DATA_DIR / "train_data.pt")
-    val_ds   = ClinicalDataset(DATA_DIR / "val_data.pt")
+    train_ds = ClinicalDataset(DATA_DIR / "train_data_new.pt")
+    val_ds   = ClinicalDataset(DATA_DIR / "val_data_new.pt")
     
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
     val_loader   = DataLoader(val_ds, batch_size=64)
@@ -38,8 +39,9 @@ def main():
     ],
     weight_decay=1e-2
 )
-    #criterion = nn.L1Loss()                # Mean Absolute Error
-    criterion = nn.SmoothL1Loss(beta=1.0)   # Huber loss
+    # criterion = nn.L1Loss()                  # Mean Absolute Error
+    criterion = nn.SmoothL1Loss(beta=1.0)    # Huber loss
+    # criterion = CoxPHLoss()                  # Cox Proportional Hazards Loss for survival analysis
 
 
     # 3. Training loop with Trainer
@@ -65,12 +67,12 @@ def main():
 
             torch.save(
                 model.encoder.state_dict(),
-                SAVE_PATH.with_name("clinical_encoder.pth")
+                SAVE_PATH.with_name("clinical_encoder_new.pth")
             )
 
             torch.save(
                 model.head.state_dict(),
-                SAVE_PATH.with_name("clinical_head.pth")
+                SAVE_PATH.with_name("clinical_head_new.pth")
             )
         else:
             counter += 1

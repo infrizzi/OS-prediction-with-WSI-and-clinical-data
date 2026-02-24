@@ -40,33 +40,62 @@ class MCATTrainer:
         total_loss = 0.0
         self.optimizer.zero_grad()
 
+        # Buffer per accumulare predizioni e label durante l'accumulation step
+        preds_buffer = []
+        ys_buffer = []
+
         for i, batch in enumerate(loader):
             clin_x, vis_x, y = batch
             clin_x, vis_x, y = self._to_device_and_shape(clin_x, vis_x, y)
 
+            # Eseguiamo il forward
             pred, _ = self.model(clin_x, vis_x)
-            loss = self.criterion(pred, y) / self.accumulation_steps
-            loss.backward()
+            
+            # Accumuliamo nei buffer invece di calcolare la loss subito
+            preds_buffer.append(pred)
+            ys_buffer.append(y)
 
+            # Quando raggiungiamo gli accumulation steps, calcoliamo la loss sul "mini-batch" accumulato
             if (i + 1) % self.accumulation_steps == 0 or (i + 1) == len(loader):
+                # Concateniamo tutto il buffer: es. [256, 1]
+                batch_preds = torch.cat(preds_buffer, dim=0)
+                batch_ys = torch.cat(ys_buffer, dim=0)
+
+                # Calcoliamo la Cox Loss sull'intero set accumulato
+                loss = self.criterion(batch_preds, batch_ys)
+                
+                # Backward unico per l'intero set
+                loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
-            total_loss += loss.item() * self.accumulation_steps
+                total_loss += loss.item() * len(preds_buffer)
+                
+                # Reset buffer
+                preds_buffer = []
+                ys_buffer = []
 
-        return total_loss / len(loader)
+        return total_loss / len(loader.dataset)
 
     @torch.no_grad()
     def validate(self, loader):
         self.model.eval()
         total_loss = 0.0
+        
+        # Anche in validazione, dobbiamo calcolare la loss su tutto il set o su batch consistenti
+        # Raccogliamo tutto per avere una stima corretta della Cox Loss
+        all_preds = []
+        all_ys = []
 
         for batch in loader:
             clin_x, vis_x, y = batch
             clin_x, vis_x, y = self._to_device_and_shape(clin_x, vis_x, y)
-
             pred, _ = self.model(clin_x, vis_x)
-            loss = self.criterion(pred, y)
-            total_loss += loss.item()
-
-        return total_loss / len(loader)
+            all_preds.append(pred)
+            all_ys.append(y)
+        
+        full_preds = torch.cat(all_preds, dim=0)
+        full_ys = torch.cat(all_ys, dim=0)
+        
+        loss = self.criterion(full_preds, full_ys)
+        return loss.item()
