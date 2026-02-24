@@ -30,7 +30,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_BEST"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_better"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train"
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_last_try"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_better"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -137,7 +137,7 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.5)
+    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.3, n_heads=4)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model)
 
     # Unimodal heads only if late/both fusion
