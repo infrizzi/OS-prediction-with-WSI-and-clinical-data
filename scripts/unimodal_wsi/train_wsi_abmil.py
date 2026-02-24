@@ -20,6 +20,10 @@ TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
 VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
 
+DROPOUT = 0.2
+ACC_STEPS = 128
+N_HEADS = 4
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -32,7 +36,7 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer
-    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256).to(device)
+    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256, dropout=DROPOUT, n_heads=N_HEADS).to(device)
 
     optimizer = torch.optim.Adam(
         [
@@ -41,10 +45,11 @@ def main():
         ],
         weight_decay=1e-3
     )
+
     criterion = nn.SmoothL1Loss()
 
     # 3. Training loop with Trainer
-    trainer = VisualTrainer(model, optimizer, criterion, device, accumulation_steps=8)
+    trainer = VisualTrainer(model, optimizer, criterion, device, accumulation_steps=ACC_STEPS)
     
     # 4. Early Stopping Setup
     best_val_loss = float('inf')
@@ -65,10 +70,10 @@ def main():
             SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
             torch.save(model.abmil.state_dict(),
-                    SAVE_PATH.with_name("abmil_encoder.pth"))
+                    SAVE_PATH.with_name("abmil_encoder_2.pth"))
 
             torch.save(model.head.state_dict(),
-                    SAVE_PATH.with_name("wsi_head.pth"))
+                    SAVE_PATH.with_name("wsi_head_2.pth"))
             
             print(f"  --> Model saved")
         else:

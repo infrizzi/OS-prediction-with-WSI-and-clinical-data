@@ -21,7 +21,6 @@ VISUAL_AGGREGATED_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\first_combinati
 
 # New output directory for visual splits
 OUTPUT_VISUAL_SPLITS = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits")
-OUTPUT_VISUAL_SPLITS_MULTIMODAL = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_multimodal")
 
 def create_visual_split(split_name, output_dir):
     print(f"\nProcessing {split_name} split...")

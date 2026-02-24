@@ -16,7 +16,7 @@ from src.models.cross_attention import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_abmil import ABMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
-from src.datasets.MCAT_dataset import MCATDataset   
+from src.datasets.MCAT_dataset import MCATDataset  
 
 # =========================
 # PATH SETUP
@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train"
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_both_weighted"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_better"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -38,7 +38,7 @@ ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
 WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
 
 # Fusion
-FUSION_MODE = "both"          # "early" | "late" | "both"
+FUSION_MODE = "late"          # "early" | "late" | "both"
 LATE_STRATEGY = "weighted"    # "avg" | "weighted"
 
 # Train hyperparams
@@ -137,7 +137,7 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.5)
+    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.3, n_heads=4)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model)
 
     # Unimodal heads only if late/both fusion
@@ -181,6 +181,7 @@ def main():
     # 5) Optimizer: only trainable params
     # =========================
     fusion_params = []
+    head_params = []
     base_params = []
 
     for name, param in model.named_parameters():
@@ -190,12 +191,15 @@ def main():
         # Discriminate between late fusion logits and normal params
         if "_late_logits" in name:
             fusion_params.append(param)
+        elif "clinical_head" in name or "visual_head" in name:
+            head_params.append(param)
         else:
             base_params.append(param)
 
     # Define each learning rate
     param_groups = [
         {'params': base_params, 'lr': LR},            # standard LR (1e-4)
+        {'params': head_params, 'lr': 1e-6},          # lower LR -> learning slower
         {'params': fusion_params, 'lr': 1e-1}         # higher LR -> learning faster        
     ]
 

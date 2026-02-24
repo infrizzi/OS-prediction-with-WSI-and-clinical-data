@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import joblib
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestRegressor
 
 # =============================
 # 2. CLINICAL DATA PROCESSING
@@ -21,6 +22,24 @@ GROUPWISE_MEDIAN_NUMERIC_COLS = [
     "MSIsensor Score",
     "TMB (nonsynonymous)"
 ]
+
+
+def select_top_features(df, target_col, n_features=49):
+    # Separiamo feature e target
+    X = df.drop(columns=ID_COLS + [target_col])
+    y = df[target_col]
+    
+    # Alleniamo un RF veloce per pesare le feature
+    rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+    rf.fit(X, y)
+    
+    # Prendiamo i nomi delle top N feature
+    importances = pd.Series(rf.feature_importances_, index=X.columns)
+    top_cols = importances.sort_values(ascending=False).head(n_features).index.tolist()
+    
+    print(f"{n_features} important features selected")
+    # Restituiamo il dataframe con solo ID, Top Features e Label
+    return df[ID_COLS + top_cols + [target_col]]
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,6 +81,9 @@ def main():
     # Rebuild dataframe and drop NA label
     df_out = pd.concat([df_id, X, label], axis=1)
     df_out = df_out.dropna(subset=['Overall Survival (Months)'])
+
+    df_out = select_top_features(df_out, LABEL_COL, n_features=49)
+    df_out['TCGA PanCanAtlas Cancer Type Acronym_BRCA'] = X['TCGA PanCanAtlas Cancer Type Acronym_BRCA']
 
     df_out[LABEL_COL] = scaler.fit_transform(df_out[[LABEL_COL]])
     joblib.dump(scaler, OUTPUT_DIR / "target_scaler.pkl") # Save scaler for labels

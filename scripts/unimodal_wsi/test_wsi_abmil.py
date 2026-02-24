@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from lifelines.utils import concordance_index
+from sklearn.utils import resample  # Per il calcolo della varianza
 
 # =========================
 # Add project root to PYTHONPATH
@@ -23,8 +24,8 @@ JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Modular paths
-ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder.pth"
-HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head.pth"
+ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder_2.pth"
+HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head_2.pth"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,7 +42,7 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    model = ABMILRegressor(input_dim=768, hidden_dim=256).to(device)
+    model = ABMILRegressor(input_dim=768, hidden_dim=256, dropout=0.2, n_heads=4).to(device)
     
     # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():
@@ -62,9 +63,7 @@ def evaluate():
     # 4. Prediction loop
     with torch.no_grad():
         for inputs, labels in test_loader:
-            # ABMIL returns (prediction, attention_weights))
             outputs, _ = model(inputs.to(device))
-            
             all_preds_std.append(outputs.cpu().item())
             all_labels_std.append(labels.cpu().item())
 
@@ -75,28 +74,57 @@ def evaluate():
     preds_months = target_scaler.inverse_transform(all_preds_std).flatten()
     labels_months = target_scaler.inverse_transform(all_labels_std).flatten()
 
-    # 6. Metrics Calculation
-    mae = mean_absolute_error(labels_months, preds_months)
-    rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
-    r2 = r2_score(labels_months, preds_months)
-    c_index = concordance_index(labels_months, preds_months)
+    # ==========================================================
+    # 6. Bootstrap Calculation (1000 iterations)
+    # ==========================================================
+    n_iterations = 1000
+    boot_cindex = []
+    boot_mae = []
 
+    print(f"Running Bootstrap (n={n_iterations})...")
+    for _ in range(n_iterations):
+        # Campionamento con reinserimento
+        indices = resample(np.arange(len(labels_months)), replace=True)
+        
+        # Evita errori se il campionamento casuale non ha varianza nei target (molto raro)
+        if len(np.unique(labels_months[indices])) < 2:
+            continue
+
+        # Calcolo metriche sul campione
+        c = concordance_index(labels_months[indices], preds_months[indices])
+        m = mean_absolute_error(labels_months[indices], preds_months[indices])
+        
+        boot_cindex.append(c)
+        boot_mae.append(m)
+
+    # Statistiche finali
+    c_mean, c_std = np.mean(boot_cindex), np.std(boot_cindex)
+    mae_mean, mae_std = np.mean(boot_mae), np.std(boot_mae)
+
+    # Metriche puntuali sull'intero set
+    r2 = r2_score(labels_months, preds_months)
+    rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
+
+    # ==========================================================
     # 7. Final report
-    print("\n" + "="*45)
-    print("      VISUAL UNIMODAL TEST REPORT ")
-    print("="*45)
-    print(f"MAE     : {mae:.2f} mesi")
-    print(f"RMSE    : {rmse:.2f} mesi")
-    print(f"R²      : {r2:.4f}")
-    print(f"C-Index : {c_index:.4f}")
-    print("-" * 45)
+    # ==========================================================
+    print("\n" + "="*65)
+    print("      VISUAL UNIMODAL TEST REPORT")
+    print("="*65)
+    print(f"{'METRIC':<15} | {'VALUE ± SD':<20}")
+    print("-" * 65)
+    print(f"{'C-Index':<15} | {c_mean:.4f} ± {c_std:.4f}")
+    print(f"{'MAE (Months)':<15} | {mae_mean:.2f} ± {mae_std:.2f}")
+    print(f"{'RMSE':<15} | {rmse:.2f} mesi")
+    print(f"{'R²':<15} | {r2:.4f}")
+    print("-" * 65)
     
     # Esempi
     print("Sample Predictions:")
-    for i in range(min(10, len(preds_months))): 
+    for i in range(min(5, len(preds_months))): 
         diff = preds_months[i] - labels_months[i]
         print(f"Real: {labels_months[i]:6.1f} | Pred: {preds_months[i]:6.1f} | Err: {diff:6.1f}")
-    print("="*45)
+    print("="*65)
 
 if __name__ == "__main__":
     evaluate()
