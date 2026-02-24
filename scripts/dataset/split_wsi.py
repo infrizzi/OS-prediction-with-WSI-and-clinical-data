@@ -20,14 +20,13 @@ CLINICAL_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"
 VISUAL_AGGREGATED_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\first_combination")
 
 # New output directory for visual splits
-OUTPUT_VISUAL_SPLITS = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new")
-OUTPUT_VISUAL_SPLITS_MULTIMODAL = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_multimodal")
+OUTPUT_VISUAL_SPLITS = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits")
 
 def create_visual_split(split_name, output_dir):
     print(f"\nProcessing {split_name} split...")
     
     # Load clinical split data to get sample IDs
-    clinical_data = torch.load(CLINICAL_SPLITS_DIR / f'{split_name}_data_new.pt')
+    clinical_data = torch.load(CLINICAL_SPLITS_DIR / f'{split_name}_data.pt')
     sample_ids = clinical_data['sample_ids']
     
     # Destination directory for the visual split

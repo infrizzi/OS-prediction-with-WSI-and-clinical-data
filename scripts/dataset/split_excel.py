@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
-INPUT_XLSX = PROJECT_ROOT / "data" / "processed" / "clinical_processed_new.xlsx"
+INPUT_XLSX = PROJECT_ROOT / "data" / "processed" / "clinical_processed.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "splits"
 
 def main():
@@ -74,9 +74,9 @@ def main():
         }
     
     # Save bundles (train, val, test)
-    torch.save(create_bundle(X_train, y_train, ids_train), OUTPUT_DIR / 'train_data_new.pt')
-    torch.save(create_bundle(X_val, y_val, ids_val), OUTPUT_DIR / 'val_data_new.pt')
-    torch.save(create_bundle(X_test, y_test, ids_test), OUTPUT_DIR / 'test_data_new.pt')
+    torch.save(create_bundle(X_train, y_train, ids_train), OUTPUT_DIR / 'train_data.pt')
+    torch.save(create_bundle(X_val, y_val, ids_val), OUTPUT_DIR / 'val_data.pt')
+    torch.save(create_bundle(X_test, y_test, ids_test), OUTPUT_DIR / 'test_data.pt')
 
     print(f"\nSaved bundles to {OUTPUT_DIR}!")
     print(f"Total dataset - Train: {len(ids_train)} | Val: {len(ids_val)} | Test: {len(ids_test)}")

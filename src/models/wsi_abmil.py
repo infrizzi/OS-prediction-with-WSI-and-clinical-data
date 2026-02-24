@@ -9,11 +9,11 @@ class ABMIL(nn.Module):
     Input:  x [B, N, L] (B=1 in our case, N=number of patches, L=embedding dim)
     Output: M [B, L] aggregated embedding, a [B, N] attention weights
     """
-    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5):
+    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5, n_heads=8):
         super().__init__()
         self.L = input_dim
         self.D = hidden_dim
-        self.K = 1
+        self.K = n_heads
 
         self.attention_V = nn.Sequential(
             nn.Linear(self.L, self.D),
@@ -30,18 +30,23 @@ class ABMIL(nn.Module):
             nn.Linear(self.D, self.K)
         )
 
+        self.head_fusion = nn.Linear(self.L * self.K, self.L)
+
     def forward(self, x):
         # x: [B, N, 768]
         x = x.squeeze(0)  # [N, 768]
 
         a_v = self.attention_V(x)
         a_u = self.attention_U(x)
-        a = self.attention_weights(a_v * a_u)  # [N, 1]
+        a = self.attention_weights(a_v * a_u)  # [N, K]
 
-        a = a.T                 # [1, N]
-        a = F.softmax(a, dim=1) # [1, N]
+        a = a.T                 # [K, N]
+        a = F.softmax(a, dim=1) # [K, N]
 
-        M = torch.mm(a, x)      # [1, 768]
+        M = torch.mm(a, x)      # [K, 768]
+        M = M.view(1, -1)       # [1, K*768]
+        M = self.head_fusion(M) # [1, 768]
+
         return M, a
 
 class RegressionHead(nn.Module):
@@ -67,9 +72,9 @@ class ABMILRegressor(nn.Module):
     - forward(x) returns (pred, attn)
     - forward_features(x) returns (M, attn)
     """
-    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5):
+    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.5, n_heads=8):
         super().__init__()
-        self.abmil = ABMIL(input_dim=input_dim, hidden_dim=hidden_dim, dropout=dropout)
+        self.abmil = ABMIL(input_dim=input_dim, hidden_dim=hidden_dim, dropout=dropout, n_heads=n_heads)
         self.head = RegressionHead(input_dim=input_dim, dropout=dropout)
 
     def forward_features(self, x):

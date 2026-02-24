@@ -16,9 +16,12 @@ from src.trainers.wsi_trainer import VisualTrainer
 
 # Path setup
 JSON_PATH = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
-TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\train")
-VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\val")
+TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
+
+N_HEADS = 8
+DROPOUT = 0.5
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,15 +35,16 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer
-    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256).to(device)
+    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256, dropout=DROPOUT, n_heads=N_HEADS).to(device)
 
     optimizer = torch.optim.Adam(
         [
             {"params": model.abmil.parameters(), "lr": 1e-4},
-            {"params": model.head.parameters(), "lr": 1e-4},
+            {"params": model.head.parameters(), "lr": 5e-5},
         ],
         weight_decay=1e-3
     )
+
     criterion = nn.SmoothL1Loss()
 
     # 3. Training loop with Trainer
@@ -65,10 +69,10 @@ def main():
             SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
             torch.save(model.abmil.state_dict(),
-                    SAVE_PATH.with_name("abmil_encoder_new.pth"))
+                    SAVE_PATH.with_name("abmil_encoder_multihead.pth"))
 
             torch.save(model.head.state_dict(),
-                    SAVE_PATH.with_name("wsi_head_new.pth"))
+                    SAVE_PATH.with_name("wsi_head_multihead.pth"))
             
             print(f"  --> Model saved")
         else:

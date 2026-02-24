@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 INPUT_XLSX = PROJECT_ROOT / "data" / "processed" / "clinical_clean.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "processed"
-OUTPUT_XLSX = PROJECT_ROOT / "data" / "processed" / "clinical_processed_new.xlsx"
+OUTPUT_XLSX = PROJECT_ROOT / "data" / "processed" / "clinical_processed.xlsx"
 
 ID_COLS = ["Patient ID", "Sample ID"]
 LABEL_COL = "Overall Survival (Months)"

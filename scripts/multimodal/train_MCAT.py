@@ -17,24 +17,23 @@ from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_abmil import ABMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
 from src.datasets.MCAT_dataset import MCATDataset  
-from utils.Cox import CoxPHLoss
 
 # =========================
 # PATH SETUP
 # =========================
-TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data_new.pt"
-VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data_new.pt"
-TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\train")
-VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_new\val")
+TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
+VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
+TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_cox"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_last_try"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
 UNIMODAL_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
-CLIN_ENCODER_CKPT = UNIMODAL_DIR / "clinical_encoder_new.pth"
-CLIN_HEAD_CKPT    = UNIMODAL_DIR / "clinical_head_new.pth"
+CLIN_ENCODER_CKPT = UNIMODAL_DIR / "clinical_encoder.pth"
+CLIN_HEAD_CKPT    = UNIMODAL_DIR / "clinical_head.pth"
 ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
 WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
 
@@ -205,8 +204,7 @@ def main():
     ]
 
     optimizer = torch.optim.Adam(param_groups, weight_decay=WEIGHT_DECAY)
-    # criterion = nn.SmoothL1Loss(beta=1.0)
-    criterion = CoxPHLoss()
+    criterion = nn.SmoothL1Loss(beta=1.0)
 
     # =========================
     # 6) Trainer

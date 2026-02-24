@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from lifelines.utils import concordance_index
-from sklearn.utils import resample # Per il calcolo della varianza statistica
+from sklearn.utils import resample
 import sys
 
 # =========================
@@ -20,11 +20,11 @@ from src.models.clinical_mlp import ClinicalMLP
 
 # Path setup
 BASE_DIR = PROJECT_ROOT
-DATA_PATH = BASE_DIR / "data" / "splits" / "test_data_new.pt"
+DATA_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
 
 # Modular checkpoint paths
-ENCODER_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_encoder_new.pth"
-HEAD_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_head_new.pth"
+ENCODER_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_encoder.pth"
+HEAD_PATH = BASE_DIR / "outputs" / "checkpoints" / "clinical_head.pth"
 
 # Scaler path for de-standardization
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"

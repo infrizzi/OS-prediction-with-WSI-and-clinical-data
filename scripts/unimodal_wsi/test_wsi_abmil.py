@@ -24,8 +24,8 @@ JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Modular paths
-ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder.pth"
-HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head.pth"
+ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder_multihead.pth"
+HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head_multihead.pth"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,7 +42,7 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    model = ABMILRegressor(input_dim=768, hidden_dim=256).to(device)
+    model = ABMILRegressor(input_dim=768, hidden_dim=256, n_heads=8).to(device)
     
     # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():
