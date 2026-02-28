@@ -30,4 +30,4 @@ mkdir -p logs
 # ------------------------------
 # Lancio training 
 # ------------------------------
-python root/del/file/da/lanciare
+python scripts/unimodal_WSI/train_wsi_transmil.py
