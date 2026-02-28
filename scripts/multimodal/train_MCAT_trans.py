@@ -144,7 +144,7 @@ def main():
 
     # Unimodal heads only if late/both fusion
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin) if FUSION_MODE in {"late", "both"} else None
-    visual_head = RegressionHead(input_dim=d_vis, dropout=0.2) if FUSION_MODE in {"late", "both"} else None
+    visual_head = RegressionHead(input_dim=512, dropout=0.2) if FUSION_MODE in {"late", "both"} else None
 
     model = MCAT(
         clinical_encoder=clinical_encoder,
