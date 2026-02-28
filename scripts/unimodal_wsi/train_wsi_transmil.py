@@ -11,18 +11,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from src.datasets.wsi_dataset import VisualDataset
-from src.models.wsi_abmil import ABMILRegressor
+from src.models.wsi_transmil import TransMILRegressor
 from src.trainers.wsi_trainer import VisualTrainer
 
 # Path setup
 JSON_PATH = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
 TRAIN_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_DIR   = Path(r"/homes/lpaladino/visual_splits/val")
-SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
+SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model.pth"
 
 DROPOUT = 0.2
 ACC_STEPS = 128
-N_HEADS = 4
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,11 +35,11 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer
-    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256, dropout=DROPOUT, n_heads=N_HEADS).to(device)
+    model = TransMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=512, dropout=DROPOUT).to(device)
 
     optimizer = torch.optim.Adam(
         [
-            {"params": model.abmil.parameters(), "lr": 1e-4},
+            {"params": model.transmil.parameters(), "lr": 1e-4},
             {"params": model.head.parameters(), "lr": 1e-4},
         ],
         weight_decay=1e-3
@@ -53,7 +52,7 @@ def main():
     
     # 4. Early Stopping Setup
     best_val_loss = float('inf')
-    patience = 15 
+    patience = 10 
     counter = 0
   
     # 5. Training Process
@@ -69,11 +68,11 @@ def main():
             counter = 0
             SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-            torch.save(model.abmil.state_dict(),
-                    SAVE_PATH.with_name("abmil_encoder_2.pth"))
+            torch.save(model.transmil.state_dict(),
+                    SAVE_PATH.with_name("transmil_encoder.pth"))
 
             torch.save(model.head.state_dict(),
-                    SAVE_PATH.with_name("wsi_head_2.pth"))
+                    SAVE_PATH.with_name("wsi_transmil_head.pth"))
             
             print(f"  --> Model saved")
         else:

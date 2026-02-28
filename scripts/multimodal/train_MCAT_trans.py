@@ -14,7 +14,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.models.MCAT import MCAT                   
 from src.models.cross_attention import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
-from src.models.wsi_abmil import ABMIL, RegressionHead
+from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
 from src.datasets.MCAT_dataset import MCATDataset  
 
@@ -23,19 +23,19 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
-TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
-VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
+TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_inverted"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_transmil"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
 UNIMODAL_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 CLIN_ENCODER_CKPT = UNIMODAL_DIR / "clinical_encoder.pth"
 CLIN_HEAD_CKPT    = UNIMODAL_DIR / "clinical_head.pth"
-ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
-WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
+ABMIL_CKPT        = UNIMODAL_DIR / "transmil_encoder.pth"
+WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_transmil_head.pth"
 
 # Fusion
 FUSION_MODE = "late"          # "early" | "late" | "both"
@@ -61,7 +61,7 @@ WARMUP_EPOCHS = 10
 def save_mcat_checkpoints(model: MCAT, out_dir: Path):
 
     torch.save(model.clinical_encoder.state_dict(), out_dir / "clinical_encoder.pth")
-    torch.save(model.abmil.state_dict(), out_dir / "abmil_encoder.pth")
+    torch.save(model.abmil.state_dict(), out_dir / "transmil_encoder.pth")
     torch.save(model.cross_attention.state_dict(), out_dir / "cross_attention.pth")
     torch.save(model.regression_head.state_dict(), out_dir / "mcat_head.pth")
 
@@ -69,7 +69,7 @@ def save_mcat_checkpoints(model: MCAT, out_dir: Path):
     if getattr(model, "clinical_head", None) is not None:
         torch.save(model.clinical_head.state_dict(), out_dir / "clinical_head.pth")
     if getattr(model, "visual_head", None) is not None:
-        torch.save(model.visual_head.state_dict(), out_dir / "wsi_head.pth")
+        torch.save(model.visual_head.state_dict(), out_dir / "wsi_transmil_head.pth")
 
     # if weighted, also save fusion logits
     if hasattr(model, "_late_logits"):
@@ -139,7 +139,7 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.2, n_heads=4)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=512, dropout=0.2)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
 
     # Unimodal heads only if late/both fusion
