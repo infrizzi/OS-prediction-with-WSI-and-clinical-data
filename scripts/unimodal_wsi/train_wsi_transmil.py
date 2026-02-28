@@ -20,7 +20,7 @@ TRAIN_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_DIR   = Path(r"/homes/lpaladino/visual_splits/val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model.pth"
 
-DROPOUT = 0.3
+DROPOUT = 0.2
 ACC_STEPS = 128
 
 def main():

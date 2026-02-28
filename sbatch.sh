@@ -16,10 +16,10 @@ module load anaconda3/2023.09-0-none-none
 source activate fbi
 
 # Mi sposto nella cartella del progetto
-cd /homes/lpaladino/OS-PREDICTION-WITH-WSI-AND-CLINICAL-DATA
+cd /homes/lpaladino/OS-prediction-with-WSI-and-clinical-data
 
 # Rendo la root del progetto visibile a Python
-export PYTHONPATH=/homes/lpaladino/OS-PREDICTION-WITH-WSI-AND-CLINICAL-DATA:$PYTHONPATH
+export PYTHONPATH=/homes/lpaladino/OS-prediction-with-WSI-and-clinical-data:$PYTHONPATH
 
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
@@ -30,4 +30,4 @@ mkdir -p logs
 # ------------------------------
 # Lancio training 
 # ------------------------------
-python scripts/unimodal_WSI/train_wsi_transmil.py
+python scripts/multimodal/train_MCAT_trans.py

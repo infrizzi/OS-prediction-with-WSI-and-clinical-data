@@ -47,7 +47,7 @@ class MCAT(nn.Module):
 
         # Early-fusion multimodal head
         self.regression_head = nn.Sequential(
-            nn.Linear(d_clin + d_vis, 256), 
+            nn.Linear(d_clin + 512, 256), 
             nn.LayerNorm(256),
             nn.ReLU(),
             nn.Dropout(dropout),

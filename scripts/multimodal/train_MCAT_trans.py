@@ -23,8 +23,8 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
-TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
-VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
+TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
+VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_transmil"
@@ -48,7 +48,7 @@ WEIGHT_DECAY = 1e-3
 EPOCHS = 200
 DROPOUT = 0.2
 PATIENCE = 10
-ACCUM_STEPS = 256               
+ACCUM_STEPS = 128               
 
 # Warmup first epochs
 WARMUP_MODE = True           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
