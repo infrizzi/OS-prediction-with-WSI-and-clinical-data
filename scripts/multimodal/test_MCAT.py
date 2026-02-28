@@ -26,11 +26,11 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 BASE_DIR = PROJECT_ROOT
 TEST_CLINICAL_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
-TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
+TEST_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_better"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_inverted"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -51,10 +51,11 @@ def evaluate():
     d_in = clin_x0.shape[-1]
     d_vis = vis_x0.shape[-1]
     d_clin, d_model = 64, 128
+    n_head, dropout_cross = 4, 0.1
 
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
     abmil = ABMIL(input_dim=d_vis, hidden_dim=256)
-    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model)
+    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
     
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
     visual_head = RegressionHead(input_dim=d_vis)
@@ -108,10 +109,14 @@ def evaluate():
 
             results["fused"]["preds"].append(pred_fused.cpu().item())
             results["fused"]["labels"].append(y.item())
-            results["clin"]["preds"].append(out_info["clinical_pred"].cpu().item())
-            results["clin"]["labels"].append(y.item())
-            results["vis"]["preds"].append(out_info["visual_pred"].cpu().item())
-            results["vis"]["labels"].append(y.item())
+
+            if "clinical_pred" in out_info:
+                results["clin"]["preds"].append(out_info["clinical_pred"].cpu().item())
+                results["clin"]["labels"].append(y.item())
+            
+            if "visual_pred" in out_info:
+                results["vis"]["preds"].append(out_info["visual_pred"].cpu().item())
+                results["vis"]["labels"].append(y.item())
 
     # 6. De-standardization and bootstrap method for confidence intervals
     def get_metrics_with_bootstrap(y_true, y_pred, n_iterations=1000):

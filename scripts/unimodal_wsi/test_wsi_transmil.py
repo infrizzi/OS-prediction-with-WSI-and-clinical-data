@@ -15,17 +15,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from src.datasets.wsi_dataset import VisualDataset
-from src.models.wsi_abmil import ABMILRegressor
+from src.models.wsi_transmil import TransMILRegressor
 
 # Path setup
 BASE_DIR = PROJECT_ROOT
-TEST_DATA_DIR = Path(r"/homes/lpaladino/visual_splits/test")
+TEST_DATA_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Modular paths
-ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "abmil_encoder.pth"
-HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_head.pth"
+ABMIL_PATH = BASE_DIR / "outputs" / "checkpoints" / "transmil_encoder.pth"
+HEAD_PATH  = BASE_DIR / "outputs" / "checkpoints" / "wsi_transmil_head.pth"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,13 +42,13 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    model = ABMILRegressor(input_dim=768, hidden_dim=256, dropout=0.2, n_heads=4).to(device)
+    model = TransMILRegressor(input_dim=768, hidden_dim=512, dropout=0.2).to(device)
     
     # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():
-        model.abmil.load_state_dict(torch.load(ABMIL_PATH, map_location=device))
+        model.transmil.load_state_dict(torch.load(ABMIL_PATH, map_location=device))
         model.head.load_state_dict(torch.load(HEAD_PATH, map_location=device))
-        print("Visual model weights (ABMIL + Head) loaded successfully.")
+        print("Visual model weights (TransMIL + Head) loaded successfully.")
     else:
         print(f"ERROR: Checkpoints not found at {ABMIL_PATH} or {HEAD_PATH}")
         return
