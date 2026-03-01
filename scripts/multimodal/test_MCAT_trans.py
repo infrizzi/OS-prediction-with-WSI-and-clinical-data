@@ -18,7 +18,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.models.MCAT import MCAT
 from src.models.cross_attention import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
-from src.models.wsi_abmil import ABMIL, RegressionHead
+from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.datasets.MCAT_dataset import MCATDataset
 
 # =========================
@@ -30,7 +30,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_inverted"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,11 +54,11 @@ def evaluate():
     n_head, dropout_cross = 4, 0.1
 
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=512)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
     
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
-    visual_head = RegressionHead(input_dim=d_vis)
+    visual_head = RegressionHead(input_dim=512)
 
     model = MCAT(
         clinical_encoder=clinical_encoder,
@@ -75,10 +75,10 @@ def evaluate():
     # 4. Loading weights' checkpoints
     try:
         model.clinical_encoder.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_encoder.pth"))
-        model.abmil.load_state_dict(torch.load(MCAT_CKPT_DIR / "abmil_encoder.pth"))
+        model.abmil.load_state_dict(torch.load(MCAT_CKPT_DIR / "transmil_encoder.pth"))
         model.cross_attention.load_state_dict(torch.load(MCAT_CKPT_DIR / "cross_attention.pth"))
         model.clinical_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_head.pth"))
-        model.visual_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "wsi_head.pth"))
+        model.visual_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "wsi_transmil_head.pth"))
         model.regression_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "mcat_head.pth"))
         
         # Also late fusion weights if they exist

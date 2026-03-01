@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_transmil"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_transmil_nowarmup"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -48,10 +48,10 @@ WEIGHT_DECAY = 1e-3
 EPOCHS = 200
 DROPOUT = 0.2
 PATIENCE = 10
-ACCUM_STEPS = 128               
+ACCUM_STEPS = 64              
 
 # Warmup first epochs
-WARMUP_MODE = True           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
+WARMUP_MODE = False           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
 WARMUP_EPOCHS = 10 
 
 # ======================================================================================================================================================

@@ -52,7 +52,8 @@ class TransMIL(nn.Module):
         vis_emb = self.norm(h[:, 0]) # [B, hidden_dim]
         
         # Restituiamo vis_emb e un dummy per i pesi (per compatibilità con MCAT)
-        return vis_emb, None
+        dummy_attn = torch.zeros(B, N, device=x.device)
+        return vis_emb, dummy_attn
     
 class RegressionHead(nn.Module):
     """
