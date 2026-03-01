@@ -26,11 +26,11 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 BASE_DIR = PROJECT_ROOT
 TEST_CLINICAL_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
-TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
+TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_cluster\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil_nowarmup"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

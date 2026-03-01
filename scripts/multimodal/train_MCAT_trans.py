@@ -12,7 +12,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT                   
-from src.models.cross_attention import CrossAttention
+from src.models.cross_attention_clinical_as_query import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_transmil_nowarmup"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_new_cross"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
