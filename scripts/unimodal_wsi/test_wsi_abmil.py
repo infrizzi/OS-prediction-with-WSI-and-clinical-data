@@ -19,7 +19,7 @@ from src.models.wsi_abmil import ABMILRegressor
 
 # Path setup
 BASE_DIR = PROJECT_ROOT
-TEST_DATA_DIR = Path(r"/homes/lpaladino/visual_splits/test")
+TEST_DATA_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 JSON_PATH = BASE_DIR / "data" / "processed" / "patient_slide_association.json"
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 

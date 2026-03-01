@@ -16,13 +16,13 @@ from src.trainers.wsi_trainer import VisualTrainer
 
 # Path setup
 JSON_PATH = PROJECT_ROOT / "data" / "processed" / "patient_slide_association.json"
-TRAIN_DIR = Path(r"/homes/lpaladino/visual_splits/train")
-VAL_DIR   = Path(r"/homes/lpaladino/visual_splits/val")
+TRAIN_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_DIR   = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model_v1.pth"
 
 DROPOUT = 0.2
 ACC_STEPS = 128
-N_HEADS = 4
+N_HEADS = 1
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

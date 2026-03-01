@@ -51,7 +51,7 @@ class TransMIL(nn.Module):
         # Questo è l'embedding globale della slide (patient-level)
         vis_emb = self.norm(h[:, 0]) # [B, hidden_dim]
         
-        # Restituiamo vis_emb e un dummy per i pesi (per compatibilità con MCAT)
+        # Restituiamo vis_emb e un dummy per i pesi
         dummy_attn = torch.zeros(B, N, device=x.device)
         return vis_emb, dummy_attn
     

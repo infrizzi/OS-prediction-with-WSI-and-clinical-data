@@ -23,11 +23,11 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
-TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
-VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
+TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_inverted"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_inverted_new"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -51,7 +51,7 @@ PATIENCE = 10
 ACCUM_STEPS = 256               
 
 # Warmup first epochs
-WARMUP_MODE = True           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
+WARMUP_MODE = False           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
 WARMUP_EPOCHS = 10 
 
 # ======================================================================================================================================================
@@ -139,7 +139,7 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.2, n_heads=4)
+    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, dropout=0.2, n_heads=1)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
 
     # Unimodal heads only if late/both fusion

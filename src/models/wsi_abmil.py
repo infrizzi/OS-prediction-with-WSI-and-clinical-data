@@ -9,7 +9,7 @@ class ABMIL(nn.Module):
     Input:  x [B, N, L] (B=1 in our case, N=number of patches, L=embedding dim)
     Output: M [B, L] aggregated embedding, a [B, N] attention weights
     """
-    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.2, n_heads=4):
+    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.2, n_heads=1):
         super().__init__()
         self.L = input_dim
         self.D = hidden_dim
@@ -32,8 +32,6 @@ class ABMIL(nn.Module):
             nn.Dropout(dropout)
         )
 
-        self.head_fusion = nn.Linear(self.L * self.K, self.L)  
-
     def forward(self, x):
         # x: [B, N, 768]
         x = x.squeeze(0)  # [N, 768]
@@ -48,8 +46,6 @@ class ABMIL(nn.Module):
         a = F.softmax(a, dim=1) # [K, N]
 
         M = torch.mm(a, x)          # [K, 768]
-        M = M.view(1, -1)           # [1, K * 768]
-        M = self.head_fusion(M)     # [1, 768]
 
         return M, a
 
