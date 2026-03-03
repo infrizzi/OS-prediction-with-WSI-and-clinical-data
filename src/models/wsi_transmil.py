@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class TransMIL(nn.Module):
-    def __init__(self, input_dim=768, hidden_dim=512, dropout=0.2):
+    def __init__(self, input_dim=768, hidden_dim=768, dropout=0.2):
         super(TransMIL, self).__init__()
         
         # 1. Proiezione iniziale (Feature Embedding)
@@ -32,7 +32,7 @@ class TransMIL(nn.Module):
 
     def forward(self, x):
         """
-        x: [B, N, 768] (con B=1 nel tuo caso)
+        x: [B, N, 768]
         """
         B, N, _ = x.shape
         

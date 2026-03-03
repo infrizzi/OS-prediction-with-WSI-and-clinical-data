@@ -30,4 +30,4 @@ mkdir -p logs
 # ------------------------------
 # Lancio training 
 # ------------------------------
-python scripts/multimodal/train_MCAT_trans.py
+python scripts/dataset/split_wsi.py
