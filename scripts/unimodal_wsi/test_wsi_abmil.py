@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from lifelines.utils import concordance_index
-from sklearn.utils import resample  # Per il calcolo della varianza
+from sklearn.utils import resample 
 
 # =========================
 # Add project root to PYTHONPATH
@@ -42,7 +42,7 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    model = ABMILRegressor(input_dim=768, hidden_dim=256, dropout=0.2, n_heads=4).to(device)
+    model = ABMILRegressor(input_dim=768, hidden_dim=512, dropout=0.2, n_heads=1).to(device)
     
     # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():
@@ -83,25 +83,24 @@ def evaluate():
 
     print(f"Running Bootstrap (n={n_iterations})...")
     for _ in range(n_iterations):
-        # Campionamento con reinserimento
+        # Casual sampling with replacement
         indices = resample(np.arange(len(labels_months)), replace=True)
         
-        # Evita errori se il campionamento casuale non ha varianza nei target (molto raro)
+        # Check null variance in labels
         if len(np.unique(labels_months[indices])) < 2:
             continue
 
-        # Calcolo metriche sul campione
         c = concordance_index(labels_months[indices], preds_months[indices])
         m = mean_absolute_error(labels_months[indices], preds_months[indices])
         
         boot_cindex.append(c)
         boot_mae.append(m)
 
-    # Statistiche finali
+    # Final SD
     c_mean, c_std = np.mean(boot_cindex), np.std(boot_cindex)
     mae_mean, mae_std = np.mean(boot_mae), np.std(boot_mae)
 
-    # Metriche puntuali sull'intero set
+    # Additional metrics
     r2 = r2_score(labels_months, preds_months)
     rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
 

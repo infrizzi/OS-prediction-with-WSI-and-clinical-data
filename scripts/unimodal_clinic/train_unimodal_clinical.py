@@ -29,7 +29,7 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=64)
 
     # 2. Model, Loss and Optimizer
-    model = ClinicalMLP(input_dim=train_ds[0][0].shape[0]).to(device)
+    model = ClinicalMLP(input_dim=train_ds[0][0].shape[0], embedding_dim=463).to(device)
     
     optimizer = torch.optim.Adam(
     [

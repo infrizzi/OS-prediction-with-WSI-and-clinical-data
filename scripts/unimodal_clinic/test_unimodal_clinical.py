@@ -45,7 +45,7 @@ def evaluate():
 
     # 2. Model initialization and loading
     input_dim = test_ds[0][0].shape[0]
-    model = ClinicalMLP(input_dim=input_dim).to(device)
+    model = ClinicalMLP(input_dim=input_dim, embedding_dim=463).to(device)
     
     # Modular weights loading
     if ENCODER_PATH.exists() and HEAD_PATH.exists():
@@ -85,10 +85,10 @@ def evaluate():
 
     print(f"Running Bootstrap (n={n_iterations})...")
     for _ in range(n_iterations):
-        # Campionamento casuale con reinserimento
+        # Casual sampling with replacement
         indices = resample(np.arange(len(labels_months)), replace=True)
         
-        # Check per evitare campioni con varianza nulla nel target
+        # Check null variance in labels
         if len(np.unique(labels_months[indices])) < 2:
             continue
 
@@ -98,11 +98,11 @@ def evaluate():
         boot_cindex.append(c)
         boot_mae.append(m)
 
-    # Statistiche finali SD
+    # Final SD
     c_mean, c_std = np.mean(boot_cindex), np.std(boot_cindex)
     mae_mean, mae_std = np.mean(boot_mae), np.std(boot_mae)
 
-    # Altre metriche puntuali
+    # Additional metrics
     rmse = np.sqrt(mean_squared_error(labels_months, preds_months))
     r2 = r2_score(labels_months, preds_months)
 

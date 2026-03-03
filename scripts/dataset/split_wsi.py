@@ -17,10 +17,10 @@ from tqdm import tqdm
 # ==========================================
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 CLINICAL_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"
-VISUAL_AGGREGATED_DIR = Path(r"/homes/lpaladino/first_combination")
+VISUAL_AGGREGATED_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\first_combination")
 
 # New output directory for visual splits
-OUTPUT_VISUAL_SPLITS = Path(r"/homes/lpaladino/visual_splits")
+OUTPUT_VISUAL_SPLITS = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits")
 
 def create_visual_split(split_name, output_dir):
     print(f"\nProcessing {split_name} split...")

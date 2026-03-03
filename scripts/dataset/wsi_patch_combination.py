@@ -7,10 +7,10 @@ from tqdm import tqdm
 # Set up paths
 # ==============================
 # .pt paths directory
-WSI_PATH = Path(r"/work/h2020deciderficarra_shared/TCGA/BRCA/features_CONCH/pt_files")
+WSI_PATH = Path(r"C:\Users\lucap\Downloads\File_FBI\pt_files")
 
 # Output directory
-OUTPUT_DIR = Path(r"/homes/lpaladino/first_combination")
+OUTPUT_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\first_combination")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # JSON file path

@@ -16,7 +16,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT
-from src.models.cross_attention import CrossAttention
+from src.models.cross_attention_CaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_abmil import ABMIL, RegressionHead
 from src.datasets.MCAT_dataset import MCATDataset
@@ -30,7 +30,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_abmil_onehead"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_CaQ_wABMIL"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -50,12 +50,12 @@ def evaluate():
     clin_x0, vis_x0, _ = test_ds[0]
     d_in = clin_x0.shape[-1]
     d_vis = vis_x0.shape[-1]
-    d_clin, d_model = 64, 128
-    n_head, dropout_cross = 4, 0.1
+    d_clin, d_model = 463, 768
+    n_head, dropout_cross = 4, 0.2
 
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=256, n_heads=1)
-    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
+    abmil = ABMIL(input_dim=d_vis, hidden_dim=512, n_heads=1)
+    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross, abmil=abmil)
     
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
     visual_head = RegressionHead(input_dim=d_vis)
@@ -168,6 +168,7 @@ def evaluate():
 
     # 7. Final Report
     print("\n" + "="*75)
+    print(f"{MCAT_CKPT_DIR}")
     print(f"{'MODALITY':<15} | {'C-INDEX (±SD)':<15} | {'MAE (±SD) Months':<16} | {'R2':<8}")
     print("-" * 75)
     print(f"{'Clinical Only':<15} | {m_clin['cindex']:.4f} ± {m_clin['cindex_std']:.4f} | {m_clin['mae']:.2f} ± {m_clin['mae_std']:.2f}     | {m_clin['r2']:.4f}")

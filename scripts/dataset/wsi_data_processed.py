@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 # ==============================
 # Set up paths
 # ==============================
-WSI_PATH = r"/work/h2020deciderficarra_shared/TCGA/BRCA/features_CONCH/pt_files" 
+WSI_PATH = r"C:\Users\lucap\Downloads\File_FBI\pt_files" 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 CLINICAL_PATH = PROJECT_ROOT / "data" / "processed" / "clinical_clean.xlsx"

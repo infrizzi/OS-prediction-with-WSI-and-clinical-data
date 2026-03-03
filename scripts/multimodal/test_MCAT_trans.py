@@ -16,7 +16,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT
-from src.models.cross_attention import CrossAttention
+from models.cross_attention_CaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.datasets.MCAT_dataset import MCATDataset
@@ -30,7 +30,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_cluster
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil_visual_late_warmup"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil_clinicalasquery"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -168,6 +168,7 @@ def evaluate():
 
     # 7. Final Report
     print("\n" + "="*75)
+    print(f"{MCAT_CKPT_DIR}")
     print(f"{'MODALITY':<15} | {'C-INDEX (±SD)':<15} | {'MAE (±SD) Months':<16} | {'R2':<8}")
     print("-" * 75)
     print(f"{'Clinical Only':<15} | {m_clin['cindex']:.4f} ± {m_clin['cindex_std']:.4f} | {m_clin['mae']:.2f} ± {m_clin['mae_std']:.2f}     | {m_clin['r2']:.4f}")

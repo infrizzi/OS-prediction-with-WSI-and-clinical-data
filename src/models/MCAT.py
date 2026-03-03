@@ -47,7 +47,7 @@ class MCAT(nn.Module):
 
         # Early-fusion multimodal head
         self.regression_head = nn.Sequential(
-            nn.Linear(d_clin + 512, 256), 
+            nn.Linear(d_clin + d_vis, 256), 
             nn.LayerNorm(256),
             nn.ReLU(),
             nn.Dropout(dropout),
@@ -84,9 +84,9 @@ class MCAT(nn.Module):
 
         # 2. ABMIL: patch aggregation with attention-based MIL pooling
         # vis_emb: [B, d_vis], abmil_attn: [B, N]
-        vis_emb, abmil_attn = self.abmil(vis_guided) 
+        # vis_emb, abmil_attn = self.abmil(vis_guided) 
         
-        return vis_emb, cross_attn_weights, abmil_attn
+        return vis_guided, cross_attn_weights, None
 
     def _late_fuse(self, preds: list[torch.Tensor]) -> torch.Tensor:
         """

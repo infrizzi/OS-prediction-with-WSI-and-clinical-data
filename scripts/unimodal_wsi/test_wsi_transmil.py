@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from lifelines.utils import concordance_index
-from sklearn.utils import resample  # Per il calcolo della varianza
+from sklearn.utils import resample 
 
 # =========================
 # Add project root to PYTHONPATH

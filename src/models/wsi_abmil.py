@@ -9,7 +9,7 @@ class ABMIL(nn.Module):
     Input:  x [B, N, L] (B=1 in our case, N=number of patches, L=embedding dim)
     Output: M [B, L] aggregated embedding, a [B, N] attention weights
     """
-    def __init__(self, input_dim=768, hidden_dim=256, dropout=0.2, n_heads=1):
+    def __init__(self, input_dim=768, hidden_dim=512, dropout=0.2, n_heads=1):
         super().__init__()
         self.L = input_dim
         self.D = hidden_dim

@@ -36,14 +36,14 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer
-    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=256, dropout=DROPOUT, n_heads=N_HEADS).to(device)
+    model = ABMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=512, dropout=DROPOUT, n_heads=N_HEADS).to(device)
 
     optimizer = torch.optim.Adam(
         [
             {"params": model.abmil.parameters(), "lr": 1e-4},
             {"params": model.head.parameters(), "lr": 1e-4},
         ],
-        weight_decay=1e-3
+        weight_decay=1e-2
     )
 
     criterion = nn.SmoothL1Loss()
