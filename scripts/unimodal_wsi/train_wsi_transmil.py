@@ -20,7 +20,7 @@ TRAIN_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_DIR   = Path(r"/homes/lpaladino/visual_splits/val")
 SAVE_PATH = PROJECT_ROOT / "outputs" / "checkpoints" / "visual_model.pth"
 
-DROPOUT = 0.2
+DROPOUT = 0.3
 ACC_STEPS = 128
 
 def main():
@@ -35,14 +35,14 @@ def main():
     val_loader   = DataLoader(val_ds, batch_size=1)
 
     # 2. Model, Loss and Optimizer
-    model = TransMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=512, dropout=DROPOUT).to(device)
+    model = TransMILRegressor(input_dim=train_ds[0][0].shape[1], hidden_dim=768, dropout=DROPOUT).to(device)
 
     optimizer = torch.optim.Adam(
         [
             {"params": model.transmil.parameters(), "lr": 1e-4},
             {"params": model.head.parameters(), "lr": 1e-4},
         ],
-        weight_decay=1e-3
+        weight_decay=1e-2
     )
 
     criterion = nn.SmoothL1Loss()

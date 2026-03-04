@@ -20,7 +20,7 @@ class TransMIL(nn.Module):
         # Utilizziamo 2 livelli di encoder per permettere alle patch di correlare
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim, 
-            nhead=8, 
+            nhead=4, 
             dim_feedforward=hidden_dim * 2, 
             dropout=dropout, 
             activation='gelu',
@@ -59,18 +59,18 @@ class RegressionHead(nn.Module):
     """
     Simple regression head: takes embedding [B, L] -> [B, 1]
     """
-    def __init__(self, input_dim=512, dropout=0.2):
+    def __init__(self, input_dim=768, dropout=0.2):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 256),
+            nn.Linear(input_dim, 512),
+            nn.LayerNorm(512),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(512, 256),
             nn.LayerNorm(256),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(256, 128),
-            nn.LayerNorm(128),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(128, 1)
+            nn.Linear(256, 1)
         )
 
     def forward(self, x):
@@ -82,7 +82,7 @@ class TransMILRegressor(nn.Module):
     - forward(x) returns (pred, attn)
     - forward_features(x) returns (M, attn)
     """
-    def __init__(self, input_dim=768, hidden_dim=512, dropout=0.2):
+    def __init__(self, input_dim=768, hidden_dim=768, dropout=0.2):
         super().__init__()
         self.transmil = TransMIL(input_dim=input_dim, hidden_dim=hidden_dim, dropout=dropout)
         self.head = RegressionHead(input_dim=hidden_dim, dropout=dropout)
