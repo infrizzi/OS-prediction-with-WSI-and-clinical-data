@@ -42,7 +42,7 @@ def evaluate():
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # 3. Model initialization and loading
-    model = TransMILRegressor(input_dim=768, hidden_dim=512, dropout=0.2).to(device)
+    model = TransMILRegressor(input_dim=768, hidden_dim=768, dropout=0.3).to(device)
     
     # Modular weights loading
     if ABMIL_PATH.exists() and HEAD_PATH.exists():

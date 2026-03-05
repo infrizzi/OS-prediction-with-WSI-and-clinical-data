@@ -12,7 +12,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT                   
-from models.cross_attention_CaQ import CrossAttention
+from src.models.cross_attention_VaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "mcat_new_cross"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "mcat_VaQ_concat"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -48,7 +48,7 @@ WEIGHT_DECAY = 1e-3
 EPOCHS = 200
 DROPOUT = 0.2
 PATIENCE = 10
-ACCUM_STEPS = 64              
+ACCUM_STEPS = 128              
 
 # Warmup first epochs
 WARMUP_MODE = False           # If True, ABMIL and clinical encoder are frozen for the firsts epochs -> only cross-attention and heads are trained, then all is unfrozen and trained together
@@ -129,22 +129,22 @@ def main():
     clin_x0, vis_x0, y0 = train_ds[0]
     d_in = clin_x0.shape[-1]     # [D_in]
     d_vis = vis_x0.shape[-1]     # [N, D_vis]
-    d_clin = 64                  # scelto da te (embedding_dim del ClinicalEncoder)
-    d_model = 128                # cross-att internal dim
+    d_clin = 463                  # scelto da te (embedding_dim del ClinicalEncoder)
+    d_model = 768                # cross-att internal dim
     n_head = 4                   # cross-att number of heads
-    dropout_cross = 0.1          # cross-att dropout
+    dropout_cross = 0.2          # cross-att dropout
 
     # =========================
     # 2) Build modules
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = TransMIL(input_dim=d_vis, hidden_dim=512, dropout=0.2)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=768, dropout=0.3)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
 
     # Unimodal heads only if late/both fusion
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin) if FUSION_MODE in {"late", "both"} else None
-    visual_head = RegressionHead(input_dim=512, dropout=0.2) if FUSION_MODE in {"late", "both"} else None
+    visual_head = RegressionHead(input_dim=768, dropout=0.3) if FUSION_MODE in {"late", "both"} else None
 
     model = MCAT(
         clinical_encoder=clinical_encoder,
@@ -177,6 +177,9 @@ def main():
 
     set_requires_grad(model.clinical_encoder, False)
     set_requires_grad(model.abmil, False)
+    set_requires_grad(model.cross_attention, True)
+    set_requires_grad(model.clinical_head, True)
+    set_requires_grad(model.visual_head, True)
     
 
     # =========================
@@ -184,6 +187,7 @@ def main():
     # =========================
     fusion_params = []
     head_params = []
+    encoder_params = []
     base_params = []
 
     for name, param in model.named_parameters():
@@ -195,13 +199,17 @@ def main():
             fusion_params.append(param)
         elif "clinical_head" in name or "visual_head" in name:
             head_params.append(param)
+        elif "clinical_encoder" in name or "abmil" in name:
+            encoder_params.append(param)
         else:
             base_params.append(param)
 
     # Define each learning rate
     param_groups = [
-        {'params': base_params, 'lr': LR},            # standard LR (1e-4)
-        {'params': fusion_params, 'lr': 1e-2}         # higher LR -> learning faster        
+        {'params': base_params, 'lr': LR},           # standard LR (1e-4)
+        {'params': fusion_params, 'lr': 1e-2},       # higher LR -> learning faster
+        {'params': head_params, 'lr': LR},           # standard LR (1e-4)        
+        {'params': encoder_params, 'lr': 1e-5},      # lower LR for encoders        
     ]
 
     optimizer = torch.optim.Adam(param_groups, weight_decay=WEIGHT_DECAY)

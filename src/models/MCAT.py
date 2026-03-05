@@ -84,9 +84,9 @@ class MCAT(nn.Module):
 
         # 2. ABMIL: patch aggregation with attention-based MIL pooling
         # vis_emb: [B, d_vis], abmil_attn: [B, N]
-        # vis_emb, abmil_attn = self.abmil(vis_guided) 
+        vis_emb, abmil_attn = self.abmil(vis_guided) 
         
-        return vis_guided, cross_attn_weights, None
+        return vis_emb, cross_attn_weights, abmil_attn
 
     def _late_fuse(self, preds: list[torch.Tensor]) -> torch.Tensor:
         """
