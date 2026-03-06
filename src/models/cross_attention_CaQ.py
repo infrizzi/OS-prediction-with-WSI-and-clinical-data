@@ -52,10 +52,10 @@ class CrossAttention(nn.Module):
         context = context.transpose(1, 2).contiguous().view(B, self.d_model)
         
         # 5. ABMIL aggregation as residual
-        abmil_emb, _ = self.abmil(vis_x)  # [B, d_vis]
+        #abmil_emb, _ = self.abmil(vis_x)  # [B, d_vis]
 
         # 6. Norm + Residual
-        out = self.norm(abmil_emb + context)
+        out = self.norm(context)
         # print(out.shape)
         
         return out, attn_weights.mean(dim=1).squeeze(1)

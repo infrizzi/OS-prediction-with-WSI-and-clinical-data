@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train"
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "abmil" /"mcat_CaQ_wABMIL"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "abmil" /"mcat_CaQ_noresidual"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -139,7 +139,7 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=512, dropout=0.5, n_heads=1)
+    abmil = ABMIL(input_dim=d_vis, hidden_dim=512, dropout=0.3, n_heads=1)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross, abmil=abmil)
 
     # Unimodal heads only if late/both fusion
@@ -176,8 +176,8 @@ def main():
         print(f"\n>>> PHASE 1: WARM-UP ({WARMUP_EPOCHS} epochs)")
 
     # --- CHOOSE WHICH MODULE TO FREEZE ---
-    set_requires_grad(model.clinical_encoder, False)
-    set_requires_grad(model.abmil, False)
+    set_requires_grad(model.clinical_encoder, True)
+    set_requires_grad(model.abmil, True)
     set_requires_grad(model.cross_attention, True)
     set_requires_grad(model.clinical_head, True)
     set_requires_grad(model.visual_head, True)

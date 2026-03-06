@@ -12,7 +12,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT                   
-from src.models.cross_attention_VaQ import CrossAttention
+from src.models.cross_attention_CaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
@@ -23,11 +23,11 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
-TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
-VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
+TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
+VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "mcat_VaQ_noconcat_full"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "mcat_CaQ_noresidual"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -140,7 +140,7 @@ def main():
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
     abmil = TransMIL(input_dim=d_vis, hidden_dim=768, dropout=0.3)
-    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
+    cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross, abmil=abmil)
 
     # Unimodal heads only if late/both fusion
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin) if FUSION_MODE in {"late", "both"} else None
