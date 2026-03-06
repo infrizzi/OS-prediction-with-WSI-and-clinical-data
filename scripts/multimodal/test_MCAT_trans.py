@@ -16,7 +16,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Import MCAT modules
 from src.models.MCAT import MCAT
-from models.cross_attention_CaQ import CrossAttention
+from src.models.cross_attention_VaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
 from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.datasets.MCAT_dataset import MCATDataset
@@ -26,11 +26,11 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 BASE_DIR = PROJECT_ROOT
 TEST_CLINICAL_PATH = BASE_DIR / "data" / "splits" / "test_data.pt"
-TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits_cluster\test")
+TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "mcat_transmil_clinicalasquery"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "transmil" / "mcat_VaQ_concat"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -50,15 +50,15 @@ def evaluate():
     clin_x0, vis_x0, _ = test_ds[0]
     d_in = clin_x0.shape[-1]
     d_vis = vis_x0.shape[-1]
-    d_clin, d_model = 64, 128
-    n_head, dropout_cross = 4, 0.1
+    d_clin, d_model = 463, 768
+    n_head, dropout_cross = 4, 0.2
 
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = TransMIL(input_dim=d_vis, hidden_dim=512)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=768)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross)
     
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
-    visual_head = RegressionHead(input_dim=512)
+    visual_head = RegressionHead(input_dim=768)
 
     model = MCAT(
         clinical_encoder=clinical_encoder,

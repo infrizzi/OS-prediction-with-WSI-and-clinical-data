@@ -19,7 +19,7 @@ class CrossAttention(nn.Module):
         self.v_proj = nn.Linear(d_clin, d_model)
         
         # Final projection
-        self.out_proj = nn.Linear(d_vis + d_model, d_vis)
+        # self.out_proj = nn.Linear(d_vis + d_model, d_vis)
         
         self.attn_dropout = nn.Dropout(dropout)
         self.norm = nn.LayerNorm(d_model)
@@ -55,9 +55,9 @@ class CrossAttention(nn.Module):
         context = context.transpose(1, 2).contiguous().view(B, N, self.d_model)
         
         # 4. Concatenation
-        combined = torch.cat([vis_x, context], dim=-1) # [B, N, d_vis + d_model]
+        # combined = torch.cat([vis_x, context], dim=-1) # [B, N, d_vis + d_model]
         
         # 5. Final projection + Residual
-        out = self.norm(vis_x + self.out_proj(combined)) # [B, N, d_vis]
+        out = self.norm(vis_x + context) # [B, N, d_vis]
         
         return out, attn_weights.mean(dim=1).squeeze(-1)
