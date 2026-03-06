@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "mcat_VaQ_noconcat_frozen"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "mcat_VaQ_noconcat_full"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
@@ -175,8 +175,8 @@ def main():
     if WARMUP_MODE:
         print(f"\n>>> PHASE 1: WARM-UP ({WARMUP_EPOCHS} epochs)")
 
-    set_requires_grad(model.clinical_encoder, False)
-    set_requires_grad(model.abmil, False)
+    set_requires_grad(model.clinical_encoder, True)
+    set_requires_grad(model.abmil, True)
     set_requires_grad(model.cross_attention, True)
     set_requires_grad(model.clinical_head, True)
     set_requires_grad(model.visual_head, True)
