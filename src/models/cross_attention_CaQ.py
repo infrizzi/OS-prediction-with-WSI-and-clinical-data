@@ -12,9 +12,9 @@ class CrossAttention(nn.Module):
         self.n_heads = n_heads
         self.d_k = d_model // n_heads
         
-        self.clinical_proj = nn.Linear(d_clin, d_model)
+        # self.clinical_proj = nn.Linear(d_clin, d_model)
 
-        self.q_proj = nn.Linear(d_model, d_model)
+        self.q_proj = nn.Linear(d_clin, d_model)
         self.k_proj = nn.Linear(d_vis, d_model)
         self.v_proj = nn.Linear(d_vis, d_model)
         
@@ -30,10 +30,10 @@ class CrossAttention(nn.Module):
         B, N, _ = vis_x.shape
         
         # 1. Projection and head splitting
-        residual = self.clinical_proj(clin_emb) # [B, d_model]
+        # residual = self.clinical_proj(clin_emb) # [B, d_model]
 
         # Q: [B, n_heads, 1, d_k]
-        Q = self.q_proj(residual).view(B, 1, self.n_heads, self.d_k).transpose(1, 2)
+        Q = self.q_proj(clin_emb).view(B, 1, self.n_heads, self.d_k).transpose(1, 2)
         # K, V: [B, n_heads, N, d_k]
         K = self.k_proj(vis_x).view(B, N, self.n_heads, self.d_k).transpose(1, 2)
         V = self.v_proj(vis_x).view(B, N, self.n_heads, self.d_k).transpose(1, 2)
@@ -52,10 +52,10 @@ class CrossAttention(nn.Module):
         context = context.transpose(1, 2).contiguous().view(B, self.d_model)
         
         # 5. ABMIL aggregation as residual
-        #abmil_emb, _ = self.abmil(vis_x)  # [B, d_vis]
+        abmil_emb, _ = self.abmil(vis_x)  # [B, d_vis]
 
         # 6. Norm + Residual
-        out = self.norm(context + residual)
+        out = self.norm(context + abmil_emb)
         # print(out.shape)
         
         return out, attn_weights.mean(dim=1).squeeze(1)

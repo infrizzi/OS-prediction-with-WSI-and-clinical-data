@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train"
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "abmil" /"mcat_CaQ_clinicresidual"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "abmil" /"mcat_CaQ_wABMIL"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
