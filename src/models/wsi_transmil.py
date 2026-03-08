@@ -20,7 +20,7 @@ class TransMIL(nn.Module):
         # Utilizziamo 2 livelli di encoder per permettere alle patch di correlare
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim, 
-            nhead=4, 
+            nhead=1, 
             dim_feedforward=hidden_dim * 2, 
             dropout=dropout, 
             activation='gelu',

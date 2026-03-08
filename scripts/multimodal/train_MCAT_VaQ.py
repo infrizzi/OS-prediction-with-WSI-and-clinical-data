@@ -14,7 +14,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.models.MCAT_VaQ import MCAT                   
 from src.models.cross_attention_VaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
-from src.models.wsi_abmil import ABMIL, RegressionHead
+from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.trainers.MCAT_trainer import MCATTrainer
 from src.datasets.MCAT_dataset import MCATDataset  
 
@@ -27,15 +27,15 @@ TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train"
 VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "abmil" /"new_VaQ"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "new_VaQ"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
 UNIMODAL_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 CLIN_ENCODER_CKPT = UNIMODAL_DIR / "clinical_encoder.pth"
 CLIN_HEAD_CKPT    = UNIMODAL_DIR / "clinical_head.pth"
-ABMIL_CKPT        = UNIMODAL_DIR / "abmil_encoder.pth"
-WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_head.pth"
+ABMIL_CKPT        = UNIMODAL_DIR / "transmil_encoder.pth"
+WSI_HEAD_CKPT     = UNIMODAL_DIR / "wsi_transmil_head.pth"
 
 # Fusion
 FUSION_MODE = "late"          # "early" | "late" | "both"
@@ -61,8 +61,8 @@ WARMUP_EPOCHS = 10
 def save_mcat_checkpoints(model: MCAT, out_dir: Path):
 
     torch.save(model.clinical_encoder.state_dict(), out_dir / "clinical_encoder.pth")
-    torch.save(model.abmil_clin.state_dict(), out_dir / "abmil_clin_encoder.pth")
-    torch.save(model.abmil_vis.state_dict(), out_dir / "abmil_vis_encoder.pth")
+    torch.save(model.abmil_clin.state_dict(), out_dir / "transmil__clin_encoder.pth")
+    torch.save(model.abmil_vis.state_dict(), out_dir / "transmil_vis_encoder.pth")
     torch.save(model.cross_attention.state_dict(), out_dir / "cross_attention.pth")
     torch.save(model.regression_head.state_dict(), out_dir / "mcat_head.pth")
 
@@ -140,8 +140,8 @@ def main():
     # =========================
     # MCAT core modules
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=512, dropout=0.3, n_heads=1)
-    abmil2 = ABMIL(input_dim=d_clin, hidden_dim=256, dropout=0.3, n_heads=1)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=768, dropout=0.3)
+    abmil2 = TransMIL(input_dim=d_clin, hidden_dim=d_clin, dropout=0.3)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross, abmil=abmil)
 
     # Unimodal heads only if late/both fusion
