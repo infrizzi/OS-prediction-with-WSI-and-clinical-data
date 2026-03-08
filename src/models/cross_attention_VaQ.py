@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class CrossAttention(nn.Module):
-    def __init__(self, d_clin, d_vis, d_model, n_heads=4, dropout=0.2):
+    def __init__(self, d_clin, d_vis, d_model, n_heads=4, dropout=0.2, abmil=None):
         super().__init__()
         assert d_model % n_heads == 0
         
@@ -58,6 +58,6 @@ class CrossAttention(nn.Module):
         # combined = torch.cat([vis_x, context], dim=-1) # [B, N, d_vis + d_model]
         
         # 5. Final projection + Residual
-        out = self.norm(vis_x + context) # [B, N, d_vis]
+        out = self.norm(context + clin_emb) # [B, N, d_vis]
         
         return out, attn_weights.mean(dim=1).squeeze(-1)
