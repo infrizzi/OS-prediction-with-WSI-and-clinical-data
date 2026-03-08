@@ -70,8 +70,8 @@ class MCAT(nn.Module):
             if n == 2:
             # Assuming: [0] Clinical, [1] Visual
             # softmax(0, 1) = [0.27, 0.73]
-                initial_logits[0] = 0.0
-                initial_logits[1] = 1.0 
+                initial_logits[0] = 1.0
+                initial_logits[1] = 0.0 
         
             # From tensor to nn.Parameter so that they are learnable
             self._late_logits = nn.Parameter(initial_logits)
