@@ -23,8 +23,8 @@ from src.datasets.MCAT_dataset import MCATDataset
 # =========================
 TRAIN_PATH_CLINICAL = PROJECT_ROOT / "data" / "splits" / "train_data.pt"
 VAL_PATH_CLINICAL  = PROJECT_ROOT / "data" / "splits" / "val_data.pt"
-TRAIN_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\train")
-VAL_VISUAL_DIR  = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\val")
+TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
+VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "new_VaQ"
