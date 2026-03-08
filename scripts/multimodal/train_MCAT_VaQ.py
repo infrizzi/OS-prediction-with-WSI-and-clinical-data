@@ -27,7 +27,7 @@ TRAIN_VISUAL_DIR = Path(r"/homes/lpaladino/visual_splits/train")
 VAL_VISUAL_DIR  = Path(r"/homes/lpaladino/visual_splits/val")
 
 # MCAT checkpoint directory
-CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "new_VaQ"
+CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints" / "transmil" / "new_VaQ_logitsinverted"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Unimodal checkpoints
