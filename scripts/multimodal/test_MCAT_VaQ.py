@@ -1,8 +1,11 @@
-
-
-
-
-
+# =========================================================================================
+# Script used to test our new VaQ versions of the multimodal models. 
+# 
+# Since we use Visual as queries and Clinical as keys and values, our cross-attention
+# produces an embedding [N, d_model], aggregated in a single vector by a NEW clinical MIL 
+# module, while visual features are aggregated by the original MIL module.
+# 
+# =========================================================================================
 
 import torch
 import numpy as np
@@ -24,7 +27,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.models.MCAT_VaQ import MCAT
 from src.models.cross_attention_VaQ import CrossAttention
 from src.models.clinical_mlp import ClinicalEncoder, ClinicalRegressionHead
-from src.models.wsi_abmil import ABMIL, RegressionHead
+from src.models.wsi_transmil import TransMIL, RegressionHead
 from src.datasets.MCAT_dataset import MCATDataset
 
 # =========================
@@ -36,7 +39,7 @@ TEST_VISUAL_DIR = Path(r"C:\Users\lucap\Downloads\File_FBI\visual_splits\test")
 SCALER_PATH = BASE_DIR / "data" / "processed" / "target_scaler.pkl"
 
 # Directory Checkpoints MCAT
-MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "abmil" / "new_VaQ"
+MCAT_CKPT_DIR = BASE_DIR / "outputs" / "checkpoints" / "transmil" / "new_VaQ"
 
 def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -60,8 +63,8 @@ def evaluate():
     n_head, dropout_cross = 1, 0.2
 
     clinical_encoder = ClinicalEncoder(input_dim=d_in, embedding_dim=d_clin)
-    abmil = ABMIL(input_dim=d_vis, hidden_dim=512, n_heads=1)
-    abmil2 = ABMIL(input_dim=d_clin, hidden_dim=256, dropout=0.3, n_heads=1)
+    abmil = TransMIL(input_dim=d_vis, hidden_dim=768, dropout=0.3)
+    abmil2 = TransMIL(input_dim=d_clin, hidden_dim=d_clin, dropout=0.3)
     cross_attention = CrossAttention(d_clin=d_clin, d_vis=d_vis, d_model=d_model, n_heads=n_head, dropout=dropout_cross, abmil=abmil)
     
     clinical_head = ClinicalRegressionHead(embedding_dim=d_clin)
@@ -83,8 +86,8 @@ def evaluate():
     # 4. Loading weights' checkpoints
     try:
         model.clinical_encoder.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_encoder.pth"))
-        model.abmil_vis.load_state_dict(torch.load(MCAT_CKPT_DIR / "abmil_vis_encoder.pth"))
-        model.abmil_clin.load_state_dict(torch.load(MCAT_CKPT_DIR / "abmil_clin_encoder.pth"))
+        model.abmil_vis.load_state_dict(torch.load(MCAT_CKPT_DIR / "transmil_vis_encoder.pth"))
+        model.abmil_clin.load_state_dict(torch.load(MCAT_CKPT_DIR / "transmil__clin_encoder.pth"))
         model.cross_attention.load_state_dict(torch.load(MCAT_CKPT_DIR / "cross_attention.pth"))
         model.clinical_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "clinical_head.pth"))
         model.visual_head.load_state_dict(torch.load(MCAT_CKPT_DIR / "wsi_head.pth"))

@@ -5,14 +5,15 @@ import torch.nn as nn
 class MCAT(nn.Module):
     """
     MCAT with configurable fusion strategy:
-      - fusion="early": early fusion only (standard MCAT)
-      - fusion="late": late fusion only (clinical head + visual head)
-      - fusion="both": compute all and combine 
+      - fusion="early": cross-attention output + clinical embedding given to a new specialized head
+      - fusion="late": cross-attention output given to the clinical head + visual embedding given to the visual head, then average
+      - fusion="both": compute all and combine
 
     Notes:
       - clinical_encoder: ClinicalEncoder (outputs [B, d_clin])
-      - abmil: ABMIL aggregator (outputs [B, d_vis])
-      - cross_attention: CrossAttention (clinical->visual)
+      - abmil_vis: ABMIL aggregator for visual features (outputs [B, d_vis])
+      - abmil_clin: ABMIL aggregator for clinical features (outputs [B, d_clin])
+      - cross_attention: CrossAttention VaQ
       - clinical_head: ClinicalRegressionHead (d_clin -> 1)  
       - visual_head: RegressionHead (d_vis -> 1)             
     """
@@ -70,8 +71,8 @@ class MCAT(nn.Module):
             if n == 2:
             # Assuming: [0] Clinical, [1] Visual
             # softmax(0, 1) = [0.27, 0.73]
-                initial_logits[0] = 1.0
-                initial_logits[1] = 0.0 
+                initial_logits[0] = 0.0
+                initial_logits[1] = 1.0 
         
             # From tensor to nn.Parameter so that they are learnable
             self._late_logits = nn.Parameter(initial_logits)
@@ -109,10 +110,10 @@ class MCAT(nn.Module):
         clin_x: [B, D_in]
         vis_x:  [B, N, d_vis]
         """
-        # 1) Clinical path
+        # 1) Clinical embedding
         clin_emb = self.clinical_encoder(clin_x)                  # [B, d_clin]
 
-        # 2) Visual path (cross-att + ABMIL)
+        # 2) Clinical path + visual aggregation 
         clin_2_emb, attn, abmil_attn = self._compute_clinical_path(clin_emb, vis_x)  # [B,d_vis]
         vis_emb, _ = self.abmil_vis(vis_x)                          # [B, d_vis]
 

@@ -5,14 +5,14 @@ import torch.nn as nn
 class MCAT(nn.Module):
     """
     MCAT with configurable fusion strategy:
-      - fusion="early": early fusion only (standard MCAT)
-      - fusion="late": late fusion only (clinical head + visual head)
+      - fusion="early": cross-attention output + clinical embedding given to a new specialized head
+      - fusion="late": cross-attention output given to the visual head + clinical embedding given to the clinical head, then average
       - fusion="both": compute all and combine 
 
     Notes:
       - clinical_encoder: ClinicalEncoder (outputs [B, d_clin])
       - abmil: ABMIL aggregator (outputs [B, d_vis])
-      - cross_attention: CrossAttention (clinical->visual)
+      - cross_attention: CrossAttention CaQ
       - clinical_head: ClinicalRegressionHead (d_clin -> 1)  
       - visual_head: RegressionHead (d_vis -> 1)             
     """
@@ -83,6 +83,7 @@ class MCAT(nn.Module):
         vis_guided, cross_attn_weights = self.cross_attention(clin_emb, vis_x)
 
         # 2. ABMIL: patch aggregation with attention-based MIL pooling
+        # COMMENTED s.t. cross-attention output directly given to the head
         # vis_emb: [B, d_vis], abmil_attn: [B, N]
         # vis_emb, abmil_attn = self.abmil(vis_guided) 
         

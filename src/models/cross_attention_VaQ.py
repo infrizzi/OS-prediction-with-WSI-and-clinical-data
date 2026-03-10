@@ -54,7 +54,7 @@ class CrossAttention(nn.Module):
         # Re-combine heads -> [B, N, d_model]
         context = context.transpose(1, 2).contiguous().view(B, N, self.d_model)
         
-        # 4. Concatenation
+        # 4. Concatenation (not used in final version)
         # combined = torch.cat([vis_x, context], dim=-1) # [B, N, d_vis + d_model]
         
         # 5. Final projection + Residual

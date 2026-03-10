@@ -5,19 +5,17 @@ class TransMIL(nn.Module):
     def __init__(self, input_dim=768, hidden_dim=768, dropout=0.2):
         super(TransMIL, self).__init__()
         
-        # 1. Proiezione iniziale (Feature Embedding)
-        # Trasformiamo l'input di UNI/CONCH nella dimensione latente del Transformer
+        # 1. Initial linear projection to match the Transformer's latent dimension
         self.fc = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
         
-        # 2. CLS Token: un vettore apprendibile che "riassume" la slide
+        # 2. CLS token initialization (learnable)
         self.cls_token = nn.Parameter(torch.randn(1, 1, hidden_dim))
         
-        # 3. Transformer Layers
-        # Utilizziamo 2 livelli di encoder per permettere alle patch di correlare
+        # 3. Transformer Layers initialization (2 layers)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim, 
             nhead=1, 
@@ -36,22 +34,20 @@ class TransMIL(nn.Module):
         """
         B, N, _ = x.shape
         
-        # Proiezione lineare
+        # Linear projection to hidden_dim
         h = self.fc(x) # [B, N, hidden_dim]
         
-        # Inserimento del CLS Token all'inizio della sequenza
+        # CLS token insertion
         cls_tokens = self.cls_token.expand(B, -1, -1)
         h = torch.cat((cls_tokens, h), dim=1) # [B, N+1, hidden_dim]
         
-        # Self-Attention tra tutte le patch (Correlated MIL)
-        # Qui ogni patch impara la sua importanza rispetto alle altre
+        # Self-Attention between all patches + CLS token
         h = self.transformer(h) # [B, N+1, hidden_dim]
         
-        # Estraiamo solo l'uscita del CLS token (posizione 0)
-        # Questo è l'embedding globale della slide (patient-level)
+        # Extracting CLS only for regression -> global representation of the bag
         vis_emb = self.norm(h[:, 0]) # [B, hidden_dim]
         
-        # Restituiamo vis_emb e un dummy per i pesi
+        # Return
         dummy_attn = torch.zeros(B, N, device=x.device)
         return vis_emb, dummy_attn
     

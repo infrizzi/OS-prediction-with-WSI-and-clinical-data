@@ -38,8 +38,8 @@ class ABMIL(nn.Module):
 
         x_norm = self.norm(x)  # [N, 768]
 
-        a_v = self.attention_V(x_norm)
-        a_u = self.attention_U(x_norm)
+        a_v = self.attention_V(x_norm) # tanh
+        a_u = self.attention_U(x_norm) # sigmoid
         a = self.attention_weights(a_v * a_u)  # [N, K]
 
         a = a.T                 # [K, N]

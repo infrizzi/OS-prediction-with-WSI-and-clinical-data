@@ -1,3 +1,12 @@
+# =========================================================================================
+# Script used to train our new VaQ versions of the multimodal models. 
+# 
+# Since we use Visual as queries and Clinical as keys and values, our cross-attention
+# produces an embedding [N, d_model], aggregated in a single vector by a NEW clinical MIL 
+# module, while visual features are aggregated by the original MIL module.
+# 
+# =========================================================================================
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader

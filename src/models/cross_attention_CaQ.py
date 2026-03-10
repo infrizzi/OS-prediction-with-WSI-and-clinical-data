@@ -51,7 +51,7 @@ class CrossAttention(nn.Module):
         # 4. Re-combine heads -> [B, 1, d_model]
         context = context.transpose(1, 2).contiguous().view(B, self.d_model)
         
-        # 5. ABMIL aggregation as residual
+        # 5. ABMIL aggregation as residual (testing to find best residual connection)
         abmil_emb, _ = self.abmil(vis_x)  # [B, d_vis]
 
         # 6. Norm + Residual
